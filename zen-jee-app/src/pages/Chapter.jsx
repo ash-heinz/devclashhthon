@@ -197,7 +197,13 @@ export const Chapter = () => {
             </h3>
             <p className="text-sm text-white/50 line-clamp-2">{chapterDetails.shortNotes}</p>
           </div>
-          <div style={topicGlass} className="rounded-2xl p-6 cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-500/5 transition-all flex flex-col justify-center items-center group">
+
+          {/* UPDATED: Route directly to this chapter's PYQ dashboard */}
+          <div 
+            onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}`, { state: { chapterName: displayTitle } })} 
+            style={topicGlass} 
+            className="rounded-2xl p-6 cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-500/5 transition-all flex flex-col justify-center items-center group"
+          >
             <h3 className="text-xl font-medium text-yellow-100 mb-1">Chapter PYQs</h3>
             <p className="text-sm text-yellow-200/50 group-hover:text-yellow-200/80">Generate a custom test from past 5 years</p>
           </div>
