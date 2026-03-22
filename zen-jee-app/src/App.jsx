@@ -4,19 +4,23 @@ import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
 import Profile from './pages/Profile';
-import Planner from './pages/Planner';
+import PreviousPapers from './pages/PreviousPapers'; 
+import TestEngine from './pages/TestEngine';
+import Planner from './pages/Planner'; 
 import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
 import { ChapterQuestions } from './pages/ChapterQuestions.jsx';
-
-// Import the new Mock Test Engine pages
-import PreviousPapers from './pages/PreviousPapers'; 
-import TestEngine from './pages/TestEngine';
+import DailyTest from './pages/DailyTest.jsx'; // <-- 1. Import Daily Test
+import Login from './pages/Login.jsx'; // <-- 1. Import Login
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Route */}
+        <Route path="/login" element={<Login />} /> {/* <-- 2. Add Login Route */}
+
+        {/* Main Routes */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/search" element={<Search />} />
         
@@ -33,6 +37,8 @@ export default function App() {
         {/* Mock Test Routes */}
         <Route path="/previous-papers" element={<PreviousPapers />} />
         <Route path="/test/:testId" element={<TestEngine />} />
+        {/* Daily Spaced Repetition Route */}
+        <Route path="/daily-test" element={<DailyTest />} /> {/* <-- 2. Add Route */}
       </Routes>
     </BrowserRouter>
   );
