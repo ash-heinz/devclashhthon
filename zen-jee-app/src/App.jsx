@@ -10,11 +10,16 @@ import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
 import { ChapterQuestions } from './pages/ChapterQuestions.jsx';
 import DailyTest from './pages/DailyTest.jsx'; // <-- 1. Import Daily Test
+import Login from './pages/Login.jsx'; // <-- 1. Import Login
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Route */}
+        <Route path="/login" element={<Login />} /> {/* <-- 2. Add Login Route */}
+
+        {/* Main Routes */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/search" element={<Search />} />
         
