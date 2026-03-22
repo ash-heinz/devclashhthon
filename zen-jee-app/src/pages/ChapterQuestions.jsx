@@ -30,6 +30,14 @@ const formatTime = (secs) => {
   return `${m}:${s}`;
 };
 
+// --- Date Helper for Daily Goal ---
+const getLocalDateStr = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const ChapterQuestions = () => {
   const { subjectId, chapterId } = useParams();
   const navigate = useNavigate();
@@ -121,9 +129,9 @@ export const ChapterQuestions = () => {
   const closeQuestion = () => setSearchParams({ tab: activeTab });
 
   const handleBackNavigation = () => {
-    if (isStarted) closeQuestion(); // Inside a question -> Back to list
-    else if (activeTab !== 'overview') handleTabChange('overview'); // Inside a tab -> Back to overview
-    else navigate('/previous-questions'); // At overview -> Back to main PYQ page
+    if (isStarted) closeQuestion(); 
+    else if (activeTab !== 'overview') handleTabChange('overview'); 
+    else navigate('/previous-questions'); 
   };
 
   const handleReattempt = () => {
@@ -159,6 +167,11 @@ export const ChapterQuestions = () => {
       if (answers[currentIndex] !== undefined) {
         setCheckedStates(prev => ({ ...prev, [currentIndex]: true }));
         setTimeTaken(prev => ({ ...prev, [currentIndex]: currentTimeElapsed }));
+
+        // --- NEW: Update Daily Goal Tracker ---
+        const todayStr = getLocalDateStr(new Date());
+        const currentProgress = parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0;
+        localStorage.setItem(`zenjee-progress-${todayStr}`, currentProgress + 1);
       }
     };
 

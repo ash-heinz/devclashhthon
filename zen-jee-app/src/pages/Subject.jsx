@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
+import { mockQuestions } from '../data/mockTests.js'; // <-- IMPORT MOCK QUESTIONS
 
 // --- SVGs & Styling Helpers ---
 const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
-  background: `rgba(${r}, ${g}, ${b}, ${alphaBg})`,
+  background: `rgba(${r}, g}, ${b}, ${alphaBg})`,
   backdropFilter: 'blur(16px)',
   border: `1px solid rgba(${r}, ${g}, ${b}, ${alphaBorder})`,
 });
@@ -23,20 +24,17 @@ export default function Subject() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
 
-  // --- FEATURES FROM 'divye' BRANCH ---
-  // Initialize from localStorage, default to class11 if nothing is saved
   const [activeGrade, setActiveGrade] = useState(() => {
     return localStorage.getItem('zenjee-class') || 'class11';
   });
 
-  // Keep localStorage in sync whenever the grade changes
   useEffect(() => {
     localStorage.setItem('zenjee-class', activeGrade);
   }, [activeGrade]);
 
   const layout = subjectLayout[subjectId] || subjectLayout.physics;
 
-  // --- DIAGNOSTIC ENGINE: Calculate Topic Scores & Chapter Progress (From 'main' branch) ---
+  // --- DIAGNOSTIC ENGINE: Calculate Topic Scores & Chapter Progress ---
   const { chapterList, ringStats } = useMemo(() => {
     let strongCount = 0; let weakCount = 0; let threatCount = 0; let unattemptedCount = 0;
     
@@ -50,11 +48,11 @@ export default function Subject() {
       const totalLectures = topics.length;
       const completedLectures = tickedLectures.length;
 
-      // 2. Topic Diagnostic Scoring (Based on PYQ Accuracy)
       const questions = getQuestionsForChapter(subjectId, chapterId, chapter.name);
       const savedAns = JSON.parse(localStorage.getItem(`zenjee-answers-${chapterId}-ans`) || '{}');
       const savedChk = JSON.parse(localStorage.getItem(`zenjee-answers-${chapterId}-chk`) || '{}');
 
+      // 2. Normal PYQ Topic Diagnostic Scoring
       const analyzedTopics = topics.map(topic => {
         const topicQs = questions.filter(q => q.topic === topic.id);
         let correct = 0; let attempted = 0;
@@ -79,6 +77,43 @@ export default function Subject() {
 
         return { ...topic, score, category, correct, attempted };
       });
+
+      // 3. MOCK TEST INTEGRATION
+      // Finds all mock questions associated with this specific chapter
+      const mockQs = mockQuestions.filter(q => q.chapterId === chapterId);
+      
+      if (mockQs.length > 0) {
+        let mockCorrect = 0; let mockAttempted = 0;
+        
+        mockQs.forEach(q => {
+          const globalQId = `mock_${q.id}`;
+          if (savedChk[globalQId]) {
+            mockAttempted++;
+            if (savedAns[globalQId] === q.correct) mockCorrect++;
+          }
+        });
+        
+        // If the student attempted mock questions for this chapter, add it as a new data point
+        let score = null; let category = 'Unattempted';
+        if (mockAttempted > 0) {
+          score = Math.round((mockCorrect / mockAttempted) * 100);
+          if (score >= 70) { category = 'Strength'; strongCount++; }
+          else if (score >= 40) { category = 'Weakness'; weakCount++; }
+          else { category = 'Threat'; threatCount++; }
+        } else {
+          unattemptedCount++;
+        }
+        
+        // Push the mock test performance into the topic breakdown list
+        analyzedTopics.push({
+          id: 'mock_test_perf',
+          name: '⭐ Mock Test Performance',
+          score,
+          category,
+          correct: mockCorrect,
+          attempted: mockAttempted
+        });
+      }
 
       return { id: chapterId, name: chapter.name, totalLectures, completedLectures, analyzedTopics };
     }).filter(Boolean);
@@ -149,13 +184,18 @@ export default function Subject() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-white/5 pt-4">
                     {chap.analyzedTopics.map(topic => {
                       // Styling based on diagnostic score
-                      const style = topic.category === 'Strength' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' :
+                      let style = topic.category === 'Strength' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' :
                                     topic.category === 'Weakness' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-200' :
                                     topic.category === 'Threat'   ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' :
                                     'bg-white/5 border-white/10 text-white/50';
 
+                      // Add a special glowing ring for the Mock Test row to make it stand out
+                      if (topic.id === 'mock_test_perf') {
+                        style += ' ring-1 ring-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)]';
+                      }
+
                       return (
-                        <div key={topic.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-medium ${style}`}>
+                        <div key={topic.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-medium ${style} transition-all`}>
                           <span className="truncate pr-4">{topic.name}</span>
                           <span className="shrink-0 font-bold">{topic.score !== null ? `${topic.score}%` : 'Unrated'}</span>
                         </div>
@@ -174,7 +214,7 @@ export default function Subject() {
               {/* Glow Behind Ring */}
               <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[${layout.hex}] opacity-20 blur-[60px] rounded-full pointer-events-none`} />
 
-              <h3 className="text-lg font-bold text-white mb-8 tracking-wider uppercase">Mastery Analytics</h3>
+              <h3 className="text-lg font-bold text-white mb-8 tracking-wider uppercase text-center">Mastery Analytics</h3>
 
               {/* SVG Ring Chart */}
               <div className="relative w-48 h-48 mb-8">
@@ -192,7 +232,7 @@ export default function Subject() {
                   
                   {/* Weakness (Yellow) */}
                   {ringStats.weakCount > 0 && (
-                    <circle cx="70" cy="70" r={radius} fill="none" stroke="#eab308" strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={weakOffset} strokeDashoffset={getOffset(ringStats.weakCount)} strokeLinecap="round" transform={`rotate(${(ringStats.threatCount/total)*360} 70 70)`} className="transition-all duration-1000" />
+                    <circle cx="70" cy="70" r={radius} fill="none" stroke="#eab308" strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={weakOffset} strokeLinecap="round" transform={`rotate(${(ringStats.threatCount/total)*360} 70 70)`} className="transition-all duration-1000" />
                   )}
                   
                   {/* Strength (Green) */}
@@ -212,19 +252,19 @@ export default function Subject() {
               <div className="w-full space-y-3">
                 <div className="flex justify-between items-center text-sm font-medium">
                   <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span><span className="text-emerald-100">Strengths (&gt;70%)</span></div>
-                  <span className="text-white/80">{ringStats.strongCount} Topics</span>
+                  <span className="text-white/80">{ringStats.strongCount} Areas</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-medium">
                   <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></span><span className="text-yellow-100">Weaknesses</span></div>
-                  <span className="text-white/80">{ringStats.weakCount} Topics</span>
+                  <span className="text-white/80">{ringStats.weakCount} Areas</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-medium">
                   <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span><span className="text-rose-100">Threats (&lt;40%)</span></div>
-                  <span className="text-white/80">{ringStats.threatCount} Topics</span>
+                  <span className="text-white/80">{ringStats.threatCount} Areas</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-medium pt-3 border-t border-white/10 mt-3">
                   <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-white/10"></span><span className="text-white/50">Unrated / Unattempted</span></div>
-                  <span className="text-white/40">{ringStats.unattemptedCount} Topics</span>
+                  <span className="text-white/40">{ringStats.unattemptedCount} Areas</span>
                 </div>
               </div>
 

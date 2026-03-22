@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NtaNotifications from './NtaNotifications';
 
 // --- Motivational Quotes Array ---
 const zenQuotes = [
@@ -76,33 +77,97 @@ const chemGlass = getGlassStyle(52, 211, 153, 0.06, 0.15);
 const mathGlass = getGlassStyle(251, 146, 60, 0.06, 0.15);    
 const glassHover = "hover:bg-white/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl relative overflow-hidden group";
 
+// --- Date Helpers ---
+const getLocalDateStr = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [chatInput, setChatInput] = useState('');
   
   // Controls the visibility of the Profile + Calendar dropdown
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  // Dynamic Quote State
   const [currentQuote, setCurrentQuote] = useState("");
 
-  // Sync state with localStorage for global persistence across pages
   const [selectedClass, setSelectedClass] = useState(() => localStorage.getItem('zenjee-class') || 'class12');
   const [targetExam, setTargetExam] = useState(() => localStorage.getItem('zenjee-exam') || 'mains');
 
-  useEffect(() => {
-    localStorage.setItem('zenjee-class', selectedClass);
-  }, [selectedClass]);
+  // --- STREAK & GOAL STATE ---
+  const todayObj = new Date();
+  const todayStr = getLocalDateStr(todayObj);
+  const currentYear = todayObj.getFullYear();
+  const currentMonth = todayObj.getMonth();
+  const todayDateNum = todayObj.getDate();
 
-  useEffect(() => {
-    localStorage.setItem('zenjee-exam', targetExam);
-  }, [targetExam]);
+  const [dailyGoal, setDailyGoal] = useState(() => parseInt(localStorage.getItem('zenjee-daily-goal')) || 30);
+  const [dailyProgress, setDailyProgress] = useState(() => parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
+  const [streakDates, setStreakDates] = useState(() => JSON.parse(localStorage.getItem('zenjee-streak-dates')) || []);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
-  // Set a random quote on component mount (refresh)
+  // Sync Class & Exam
+  useEffect(() => { localStorage.setItem('zenjee-class', selectedClass); }, [selectedClass]);
+  useEffect(() => { localStorage.setItem('zenjee-exam', targetExam); }, [targetExam]);
+
+  // Set Random Quote
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * zenQuotes.length);
     setCurrentQuote(zenQuotes[randomIndex]);
   }, []);
+
+  // --- STREAK LOGIC ---
+  const checkStreak = (prog, goal) => {
+    if (goal > 0 && prog >= goal) {
+      if (!streakDates.includes(todayStr)) {
+        const newDates = [...streakDates, todayStr];
+        setStreakDates(newDates);
+        localStorage.setItem('zenjee-streak-dates', JSON.stringify(newDates));
+      }
+    } else {
+      if (streakDates.includes(todayStr)) {
+        const newDates = streakDates.filter(d => d !== todayStr);
+        setStreakDates(newDates);
+        localStorage.setItem('zenjee-streak-dates', JSON.stringify(newDates));
+      }
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('zenjee-daily-goal', dailyGoal);
+    checkStreak(dailyProgress, dailyGoal);
+  }, [dailyGoal, dailyProgress]);
+
+  useEffect(() => {
+    localStorage.setItem(`zenjee-progress-${todayStr}`, dailyProgress);
+  }, [dailyProgress, todayStr]);
+
+  // Calculate consecutive streak
+  useEffect(() => {
+    let streak = 0;
+    let d = new Date();
+    if (streakDates.includes(getLocalDateStr(d))) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+      while(streakDates.includes(getLocalDateStr(d))) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+    } else {
+      d.setDate(d.getDate() - 1);
+      while(streakDates.includes(getLocalDateStr(d))) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+    }
+    setCurrentStreak(streak);
+  }, [streakDates]);
+
+  const handleAddProgress = (amt) => {
+    setDailyProgress(prev => prev + amt);
+  };
 
   const handleChatSubmit = (e) => {
     if (e.key === 'Enter' && chatInput.trim() !== '') {
@@ -112,13 +177,17 @@ export default function Dashboard() {
 
   const getDisplayClass = () => selectedClass === 'class11' ? 'Class 11' : 'Class 12';
 
+  // Calendar Helpers
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
   return (
     <div className="h-screen w-full overflow-hidden flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased">
       
       {/* 1. NAVBAR */}
       <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 z-50 relative">
         
-        {/* LEFT SIDE: Logo & My Study Space Button */}
+        {/* LEFT SIDE */}
         <div className="flex items-center gap-8">
           <div className="text-3xl font-semibold tracking-wider text-white">
             Zen<span className="text-sky-300 font-extralight">JEE</span>
@@ -136,10 +205,17 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* RIGHT SIDE: Streak & Profile */}
+        {/* RIGHT SIDE */}
         <div className="flex items-center gap-6 relative">
-          <span className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-200 px-4 py-1.5 rounded-full border border-orange-500/30">
-            🔥 12 Days
+          
+          {/* NTA NOTIFICATIONS ADDED HERE */}
+          <NtaNotifications />
+
+          {/* DYNAMIC STREAK BADGE */}
+          <span className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-200 px-4 py-1.5 rounded-full border border-orange-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(249,115,22,0.2)]">
+            <span className="text-lg">🔥</span> 
+            <span className="font-bold">{currentStreak}</span> 
+            <span className="text-xs uppercase tracking-widest opacity-80">{currentStreak === 1 ? 'Day' : 'Days'}</span>
           </span>
 
           {/* PROFILE TOGGLE BUTTON */}
@@ -159,31 +235,25 @@ export default function Dashboard() {
             </svg>
           </button>
 
-          {/* HIDDEN DROPDOWN (Profile + Toggles + Calendar) */}
+          {/* HIDDEN DROPDOWN */}
           {isProfileOpen && (
             <div 
               style={{...defaultGlass, background: 'rgba(0, 10, 36, 0.95)'}} 
               className="absolute top-[calc(100%+12px)] right-0 w-[360px] p-6 rounded-3xl shadow-2xl border border-white/10 z-50 animate-fade-in-up"
             >
-              <div className="space-y-6">
-                {/* Profile Details with External Link Button */}
+              <div className="space-y-5">
                 <div className="border-b border-white/10 pb-4 flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-medium text-white tracking-wide">Nahin</h3>
                     <p className="text-xs text-white/40 mt-1">nahin@nitrr.edu.in</p>
                   </div>
-                  <button 
-                    onClick={() => navigate('/profile')}
-                    className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group"
-                    title="View Full Profile"
-                  >
+                  <button onClick={() => navigate('/profile')} className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group">
                     <svg className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </button>
                 </div>
 
-                {/* Class & Exam Toggles */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">Target Exam</span>
@@ -201,43 +271,70 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Integrated Calendar */}
+                {/* --- DAILY GOAL TRACKER --- */}
                 <div className="pt-4 border-t border-white/10">
-                  <h4 className="text-[11px] font-bold text-white/60 uppercase tracking-widest mb-4 text-center">Upcoming Exams Calendar</h4>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold">Daily Goal (Questions)</span>
+                    <input 
+                      type="number" 
+                      value={dailyGoal} 
+                      onChange={(e) => setDailyGoal(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white text-center outline-none focus:border-sky-500/50 transition-colors"
+                    />
+                  </div>
+                  
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-2 shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500 ease-out"
+                      style={{ width: `${Math.min(100, (dailyProgress / dailyGoal) * 100)}%` }}
+                    ></div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-white/70">{dailyProgress} / {dailyGoal} Completed</span>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => handleAddProgress(1)} className="px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-md text-[10px] font-bold text-white transition">+1</button>
+                      <button onClick={() => handleAddProgress(5)} className="px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-md text-[10px] font-bold text-white transition">+5</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- LIVE STREAK CALENDAR --- */}
+                <div className="pt-4 border-t border-white/10">
+                  <h4 className="text-[11px] font-bold text-white/60 uppercase tracking-widest mb-4 text-center">
+                    {todayObj.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </h4>
                   
                   <div className="grid grid-cols-7 gap-1 text-[10px] text-center text-white/30 mb-2 font-medium">
                     {['S','M','T','W','T','F','S'].map(d => <div key={d}>{d}</div>)}
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
-                    {/* Dummy padding days for formatting */}
-                    <div className="py-2 text-white/5"></div><div className="py-2 text-white/5"></div>
+                    {/* Empty Slots */}
+                    {[...Array(firstDayOfMonth)].map((_, i) => <div key={`empty-${i}`} className="py-2"></div>)}
                     
-                    {[...Array(31)].map((_, i) => {
+                    {/* Actual Month Days */}
+                    {[...Array(daysInMonth)].map((_, i) => {
                       const day = i + 1;
-                      const isToday = day === 22; // Example "Today"
-                      const isMains = day === 28; 
-                      const isAdv = day === 30;
+                      const isToday = day === todayDateNum;
+                      const dateStr = getLocalDateStr(new Date(currentYear, currentMonth, day));
+                      const hasFire = streakDates.includes(dateStr);
                       
-                      let styles = "py-1.5 rounded-md hover:bg-white/10 cursor-pointer transition-colors text-white/50";
+                      let styles = "py-1.5 rounded-md relative flex items-center justify-center transition-all ";
                       
-                      if (isToday) styles = "py-1.5 rounded-md bg-sky-500/30 text-sky-200 font-bold border border-sky-500/30";
-                      if (isMains) styles = "py-1.5 rounded-md bg-red-500/30 text-red-200 font-bold border border-red-500/30";
-                      if (isAdv) styles = "py-1.5 rounded-md bg-orange-500/30 text-orange-200 font-bold border border-orange-500/30";
+                      if (isToday && !hasFire) styles += "bg-sky-500/30 text-sky-200 font-bold border border-sky-500/50 shadow-[0_0_10px_rgba(14,165,233,0.3)]";
+                      else if (isToday && hasFire) styles += "bg-orange-500/20 border border-orange-500/30 shadow-[0_0_10px_rgba(249,115,22,0.2)]";
+                      else styles += "text-white/50 bg-white/5";
 
                       return (
-                        <div key={day} className={styles} title={isMains ? "JEE Mains" : isAdv ? "JEE Advanced" : ""}>
-                          {day}
+                        <div key={day} className={styles} title={hasFire ? "Goal Met!" : ""}>
+                          <span className={`transition-opacity ${hasFire ? 'opacity-20' : 'opacity-100'}`}>{day}</span>
+                          {hasFire && (
+                            <span className="absolute inset-0 flex items-center justify-center text-orange-400 text-sm filter drop-shadow-[0_0_5px_rgba(249,115,22,0.8)] z-10 animate-fade-in-up">🔥</span>
+                          )}
                         </div>
                       );
                     })}
-                  </div>
-
-                  {/* Calendar Key */}
-                  <div className="flex gap-3 mt-4 pt-3 border-t border-white/5 text-[9px] font-medium text-white/40 justify-center uppercase tracking-wider">
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-sky-500/40 rounded-sm"></div> Today</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-red-500/40 rounded-sm"></div> Mains</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-orange-500/40 rounded-sm"></div> Adv</div>
                   </div>
                 </div>
 
@@ -247,7 +344,6 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* CLICK-OUTSIDE OVERLAY (Closes dropdown when clicking elsewhere) */}
       {isProfileOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)}></div>
       )}
@@ -300,21 +396,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 4. PRACTICE RESOURCES */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
-        <div 
-          onClick={() => navigate('/previous-questions')} 
-          style={defaultGlass} 
-          className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}
-        >
-          <PyqDoodle />
-          <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
-        </div>
+        {/* PRACTICE RESOURCES */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
+          <div onClick={() => navigate('/previous-questions')} style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
+            <PyqDoodle />
+            <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
+          </div>
           
-          <div style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
+          <div onClick={() => navigate('/previous-papers')} style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <PypDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Previous Papers</h3>
           </div>
+          
           <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <AiDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Custom AI Paper</h3>
