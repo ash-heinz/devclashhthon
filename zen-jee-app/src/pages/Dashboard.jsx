@@ -300,13 +300,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* PRACTICE RESOURCES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-2">
-          <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
-            <PyqDoodle />
-            <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
-          </div>
-          <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
+        {/* 4. PRACTICE RESOURCES */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
+        <div 
+          onClick={() => navigate('/previous-questions')} 
+          style={defaultGlass} 
+          className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}
+        >
+          <PyqDoodle />
+          <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
+        </div>
+          
+          <div style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <PypDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Previous Papers</h3>
           </div>
