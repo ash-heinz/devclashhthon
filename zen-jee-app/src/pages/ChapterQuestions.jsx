@@ -69,8 +69,8 @@ export const ChapterQuestions = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   useEffect(() => {
-    setQuestions(getQuestionsForChapter(chapterId, displayTitle));
-  }, [chapterId, displayTitle]);
+    setQuestions(getQuestionsForChapter(subjectId, chapterId, displayTitle));
+  }, [subjectId, chapterId, displayTitle]);
 
   useEffect(() => {
     localStorage.setItem(storageKey + '-ans', JSON.stringify(answers));

@@ -24,9 +24,8 @@ export const PreviousQuestions = () => {
   const navigate = useNavigate();
 
   // DYNAMIC PROGRESS CALCULATION
-  const getProgress = (chapterId, chapterName) => {
-    // 1. Get the actual number of questions generated for this chapter
-    const totalQuestions = getQuestionsForChapter(chapterId, chapterName).length;
+  const getProgress = (subjectId, chapterId, chapterName) => {
+    const totalQuestions = getQuestionsForChapter(subjectId, chapterId, chapterName).length;
     
     // 2. Read the PYQ local storage to see how many were answered
     const storageKey = `zenjee-answers-${chapterId}-chk`;

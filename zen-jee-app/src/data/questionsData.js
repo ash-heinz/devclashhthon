@@ -1,9 +1,11 @@
 // src/data/questionsData.js
+import { allChaptersData } from './chaptersData.js';
 
 const realQuestions = {
   'p_u2': [ 
     {
       id: 1,
+      topic: 'p_u2_t1', // Tagged to a specific lecture
       text: "A particle starts from rest and accelerates with a constant acceleration of 2 m/s². What is the distance traveled in the 5th second?",
       options: ["4 m", "9 m", "16 m", "25 m"],
       correctIndex: 1, 
@@ -13,6 +15,7 @@ const realQuestions = {
     },
     {
       id: 2,
+      topic: 'p_u2_t2',
       text: "Two projectiles are fired from the same point with the same speed at angles of projection 60° and 30° respectively. Which of the following is true?",
       options: ["Their maximum heights will be the same", "Their ranges will be the same", "Their velocities at the highest point will be the same", "Their times of flight will be the same"],
       correctIndex: 1,
@@ -20,34 +23,32 @@ const realQuestions = {
       difficulty: "Easy",
       year: "2022"
     }
-  ],
-  'p_u11': [ 
-    {
-      id: 3,
-      text: "Two point charges +q and -q are placed at a distance d apart. What is the electric potential at the midpoint of the line joining them?",
-      options: ["k * (2q/d)", "k * (q/d²)", "Zero", "Infinity"],
-      correctIndex: 2, 
-      explanation: "Potential is a scalar quantity. V = V1 + V2 = (k*q)/(d/2) + (k*-q)/(d/2) = 0.",
-      difficulty: "Medium",
-      year: "2024"
-    }
   ]
 };
 
-export const getQuestionsForChapter = (chapterId, chapterName) => {
+// UPDATED: Now requires subjectId so it can find the real topics from chaptersData
+export const getQuestionsForChapter = (subjectId, chapterId, chapterName) => {
   if (realQuestions[chapterId]) return realQuestions[chapterId];
 
-  // Fallback generator now includes mock tags
+  // Fetch the actual topics for this chapter from the database
+  const chapter = allChaptersData[subjectId]?.[chapterId];
+  const topics = chapter?.topics || [{ id: 'mock_topic', name: 'General Concept' }];
+
   const difficulties = ["Easy", "Medium", "Hard"];
   const years = ["2024", "2023", "2022", "2021"];
 
-  return Array.from({ length: 5 }).map((_, i) => ({
-    id: `mock_${chapterId}_${i}`,
-    text: `Sample previous year question ${i + 1} for ${chapterName}. This is where the complex mathematical equation or concept would go.`,
-    options: [`Option A for Q${i+1}`, `Option B for Q${i+1}`, `Option C for Q${i+1}`, `Option D for Q${i+1}`],
-    correctIndex: Math.floor(Math.random() * 4), 
-    explanation: `This is the detailed step-by-step solution for question ${i + 1}.`,
-    difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
-    year: years[Math.floor(Math.random() * years.length)]
-  }));
+  // Fallback generator now tags each question to a random topic from that chapter
+  return Array.from({ length: 8 }).map((_, i) => {
+    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+    return {
+      id: `mock_${chapterId}_${i}`,
+      topic: randomTopic.id, // THE NEW TOPIC TAG
+      text: `Sample previous year question ${i + 1} for ${chapterName}. This tests concepts from ${randomTopic.name}.`,
+      options: [`Option A`, `Option B`, `Option C`, `Option D`],
+      correctIndex: Math.floor(Math.random() * 4), 
+      explanation: `This is the detailed step-by-step solution for question ${i + 1}.`,
+      difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
+      year: years[Math.floor(Math.random() * years.length)]
+    };
+  });
 };
