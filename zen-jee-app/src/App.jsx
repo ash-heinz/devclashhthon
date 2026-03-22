@@ -5,10 +5,11 @@ import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
 import Profile from './pages/Profile';
-import Planner from './pages/Planner'; // 1. Import Planner
+import Planner from './pages/Planner'; 
 import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
-import { ChapterQuestions } from './pages/ChapterQuestions.jsx'; // <-- 1. Import the new page
+import { ChapterQuestions } from './pages/ChapterQuestions.jsx';
+import DailyTest from './pages/DailyTest.jsx'; // <-- 1. Import Daily Test
 
 export default function App() {
   return (
@@ -19,14 +20,16 @@ export default function App() {
         
         {/* PYQ Routes */}
         <Route path="/previous-questions" element={<PreviousQuestions />} />
-        {/* 2. Add the dynamic route for the specific chapter's questions */}
         <Route path="/previous-questions/:subjectId/chapter/:chapterId" element={<ChapterQuestions />} /> 
         
         {/* Study Routes */}
         <Route path="/subject/:subjectId" element={<Subject />} />
         <Route path="/subject/:subjectId/chapter/:chapterId" element={<Chapter />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/planner" element={<Planner />} /> {/* 2. Add Route */}
+        <Route path="/planner" element={<Planner />} />
+        
+        {/* Daily Spaced Repetition Route */}
+        <Route path="/daily-test" element={<DailyTest />} /> {/* <-- 2. Add Route */}
       </Routes>
     </BrowserRouter>
   );

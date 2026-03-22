@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { allChaptersData, mockTopic } from '../data/chaptersData'; // <-- Centralized Data Import
+import { allChaptersData, mockTopic } from '../data/chaptersData.js';
+import { getQuestionsForChapter } from '../data/questionsData.js'; // <-- NEW: Import the questions database
 
 // --- Amateur Doodle Icons ---
 const ThinnerStroke = "1";
@@ -34,7 +35,7 @@ const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
 
 const defaultGlass = getGlassStyle(255, 255, 255, 0.04, 0.1);
 const topicGlass = getGlassStyle(255, 255, 255, 0.02, 0.06);
-const modalGlass = getGlassStyle(15, 23, 42, 0.8, 0.2);
+const modalGlass = getGlassStyle(15, 23, 42, 0.9, 0.2);
 
 const YouTubeTopicName = ({ videoId, fallbackName, isAdvanced }) => {
   return (
@@ -86,6 +87,9 @@ export const Chapter = () => {
 
   const displayTitle = allChaptersData[subjectId]?.[chapterId]?.name || passedChapterName || `Chapter ${chapterId}`;
 
+  // --- FETCH CHAPTER QUESTIONS TO CALCULATE DYNAMIC COUNTS ---
+  const chapterQs = getQuestionsForChapter(subjectId, chapterId, displayTitle);
+
   const toggleTopic = (topicId) => {
     setCompletedTopics(prev => {
       const newSet = new Set(prev);
@@ -106,12 +110,9 @@ export const Chapter = () => {
         <div className="text-2xl font-semibold tracking-wider text-white flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
           Zen<span className="text-sky-300 font-extralight">JEE</span>
         </div>
-        <div className="flex items-center gap-5 text-base">
-          <span className="font-medium text-white/90">Ashwast</span>
-          <span className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-200 px-4 py-1 rounded-full border border-orange-500/30">
-            🔥 12 Days
-          </span>
-        </div>
+        <button onClick={() => navigate('/')} className="px-6 py-2 rounded-full bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 text-sm tracking-wide text-sky-50">
+          ← Back to Dashboard
+        </button>
       </nav>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 flex flex-col pt-8 pb-12 overflow-y-auto custom-scrollbar">
@@ -153,6 +154,9 @@ export const Chapter = () => {
               ? `https://img.youtube.com/vi/${topic.videoId}/hqdefault.jpg` 
               : topic.thumbnail;
 
+            // --- DYNAMICALLY CALCULATE NUMBER OF QUESTIONS FOR THIS SPECIFIC LECTURE ---
+            const topicQsCount = chapterQs.filter(q => q.topic === topic.id).length;
+
             return (
               <div key={topic.id} style={topicGlass} className={`grid grid-cols-[auto_1.5fr_1.5fr_1.5fr_1fr] gap-6 p-4 rounded-2xl items-center transition-all duration-300 hover:bg-white/5 animate-fade-in-up ${isDone ? 'opacity-50' : ''}`}>
                 <div className="flex items-center justify-center">
@@ -163,7 +167,7 @@ export const Chapter = () => {
 
                 <YouTubeTopicName videoId={topic.videoId} fallbackName={topic.name} isAdvanced={topic.isAdvanced} />
 
-                <a href={`https://www.  youtube.com/watch?v=${topic.videoId}`} target="_blank" rel="noreferrer" className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full">
+                <a href={`https://youtube.com/watch?v=${topic.videoId}`} target="_blank" rel="noreferrer" className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full">
                   <img src={thumbnailUrl} alt={topic.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/10">
@@ -180,12 +184,15 @@ export const Chapter = () => {
                 </div>
 
                 <div className="flex flex-col justify-center">
-                  <div className="text-xs text-white/80 mb-2 font-medium">{topic.questions}</div>
+                  {/* --- DYNAMIC NUMBER RENDERED HERE --- */}
+                  <div className="text-xs text-white/80 mb-2 font-medium">{topicQsCount} PYQs</div>
+                  
+                  {/* --- DYNAMIC URL ROUTING --- */}
                   <button 
-                    onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}?tab=topic`, { state: { chapterName: displayTitle } })}
+                    onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}?tab=topic&topicId=${topic.id}`, { state: { chapterName: displayTitle } })}
                     className="px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 transition-colors border border-indigo-500/20 text-center w-full"
                   >
-                    Solve Topic PYQs
+                    Solve Now
                   </button>
                 </div>
               </div>
@@ -200,13 +207,7 @@ export const Chapter = () => {
             </h3>
             <p className="text-sm text-white/50 line-clamp-2">{chapterDetails.shortNotes}</p>
           </div>
-
-          {/* UPDATED: Route directly to this chapter's PYQ dashboard */}
-          <div 
-            onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}`, { state: { chapterName: displayTitle } })} 
-            style={topicGlass} 
-            className="rounded-2xl p-6 cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-500/5 transition-all flex flex-col justify-center items-center group"
-          >
+          <div onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}`, { state: { chapterName: displayTitle } })} style={topicGlass} className="rounded-2xl p-6 cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-500/5 transition-all flex flex-col justify-center items-center group">
             <h3 className="text-xl font-medium text-yellow-100 mb-1">Chapter PYQs</h3>
             <p className="text-sm text-yellow-200/50 group-hover:text-yellow-200/80">Generate a custom test from past 5 years</p>
           </div>

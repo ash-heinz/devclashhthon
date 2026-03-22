@@ -157,11 +157,26 @@ export default function Profile() {
           </div>
 
           <div className={cardStyle}>
-            <div className="flex items-start gap-4">
-              <div className="mt-0.5"><CalendarIcon /></div>
-              <div>
-                <div className="text-sm text-white/70 font-medium mb-1 tracking-wide">My Exams</div>
-                <div className="text-[1.15rem] font-bold text-white/90">JEE {targetExam}</div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-4">
+                <div className="mt-0.5"><CalendarIcon /></div>
+                <div>
+                  <div className="text-sm text-white/70 font-medium mb-1 tracking-wide">Target Exam Date</div>
+                  {/* INTERACTIVE DATE PICKER */}
+                  <input 
+                    type="date" 
+                    style={{ colorScheme: 'dark' }}
+                    value={localStorage.getItem('zenjee-exam-date') || '2026-01-24'}
+                    onChange={(e) => {
+                      localStorage.setItem('zenjee-exam-date', e.target.value);
+                      window.dispatchEvent(new Event('storage')); // Trigger re-render
+                    }}
+                    className="bg-transparent text-[1.15rem] font-bold text-sky-400 outline-none cursor-pointer w-full"
+                  />
+                </div>
+              </div>
+              <div className="text-xs font-bold text-white/40 bg-white/5 px-3 py-1 rounded-lg border border-white/10 uppercase tracking-widest">
+                JEE {targetExam}
               </div>
             </div>
           </div>

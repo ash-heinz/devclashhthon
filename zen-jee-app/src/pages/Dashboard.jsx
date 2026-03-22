@@ -118,22 +118,37 @@ export default function Dashboard() {
       {/* 1. NAVBAR */}
       <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 z-50 relative">
         
-        {/* LEFT SIDE: Logo & My Study Space Button */}
+        {/* LEFT SIDE: Logo & Action Buttons */}
         <div className="flex items-center gap-8">
           <div className="text-3xl font-semibold tracking-wider text-white">
             Zen<span className="text-sky-300 font-extralight">JEE</span>
           </div>
 
-          <button 
-            onClick={() => navigate('/planner')} 
-            className="hidden md:flex group relative px-5 py-2 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 transition-all duration-300 border border-indigo-500/30 text-sm tracking-wide text-indigo-100 shadow-[0_0_15px_rgba(99,102,241,0.15)] overflow-hidden items-center gap-2"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/0 via-indigo-400/10 to-indigo-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <svg className="w-4 h-4 text-indigo-300 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span className="relative z-10 font-medium tracking-wide">My Study Space</span>
-          </button>
+          <div className="hidden md:flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/planner')} 
+              className="group relative px-5 py-2 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 transition-all duration-300 border border-indigo-500/30 text-sm tracking-wide text-indigo-100 shadow-[0_0_15px_rgba(99,102,241,0.15)] overflow-hidden flex items-center gap-2"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/0 via-indigo-400/10 to-indigo-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <svg className="w-4 h-4 text-indigo-300 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="relative z-10 font-medium tracking-wide">My Study Space</span>
+            </button>
+
+            {/* NEW DAILY TEST BUTTON */}
+            <button 
+              onClick={() => navigate('/daily-test')} 
+              className="group relative px-5 py-2 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 transition-all duration-300 border border-emerald-500/30 text-sm tracking-wide text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.15)] overflow-hidden flex items-center gap-2"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/0 via-emerald-400/10 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <svg className="w-4 h-4 text-emerald-300 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+              </svg>
+              <span className="relative z-10 font-medium tracking-wide">Daily Test</span>
+            </button>
+          </div>
         </div>
 
         {/* RIGHT SIDE: Streak & Profile */}

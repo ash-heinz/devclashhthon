@@ -4,22 +4,29 @@ import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// --- MATH RENDERER IMPORTS ---
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// --- SVGs ---
+// --- Helper Component to Render Math Inline safely ---
+const MathText = ({ children }) => (
+  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} components={{ p: 'span' }}>
+    {children || ''}
+  </ReactMarkdown>
+);
+
 const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>;
 const IconOverview = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
 const IconHistory = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
 const IconList = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path d="M4 6h16M4 12h16M4 18h16M8 6h.01M8 12h.01M8 18h.01"/></svg>;
-const IconBookmark = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>;
-const IconWarning = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>;
-const IconCalendar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
 const IconCheck = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-400"><polyline points="20 6 9 17 4 12"/></svg>;
 const IconFilter = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><path d="M4 6h16M6 12h12M8 18h8" strokeLinecap="round"/></svg>;
 const IconSort = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l-4-4m4 4l4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-const IconChevronDown = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 ml-1"><path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-const IconChart = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 text-sky-400"><path d="M18 20V10M12 20V4M6 20v-4" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
 const IconLightbulb = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><path d="M9 18h6m-3-13a5 5 0 00-5 5c0 2.2 1.5 3.5 2 5h6c.5-1.5 2-2.8 2-5a5 5 0 00-5-5zM12 22v-1"/></svg>;
 const IconRefresh = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round"/></svg>;
@@ -37,39 +44,39 @@ export const ChapterQuestions = () => {
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'overview';
+  
+  // --- URL CONTROLLED STATES ---
   const qParam = searchParams.get('q'); 
   const isStarted = qParam !== null;
   const currentIndex = isStarted ? parseInt(qParam, 10) : 0;
+  const selectedTopicId = searchParams.get('topicId'); // Topic ID read from URL
 
   const subjectData = allChaptersData[subjectId];
   const chapterDetails = subjectData?.[chapterId];
   const displayTitle = location.state?.chapterName || chapterDetails?.name || `Chapter ${chapterId}`;
   
-  const [questions, setQuestions] = useState([]);
-  
-  // Persistent Storage
+  const [allQuestions, setAllQuestions] = useState([]);
+  const [examType, setExamType] = useState('Mains');
+
   const storageKey = `zenjee-answers-${chapterId}`;
   const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem(storageKey + '-ans') || '{}'));
   const [checkedStates, setCheckedStates] = useState(() => JSON.parse(localStorage.getItem(storageKey + '-chk') || '{}'));
   const [timeTaken, setTimeTaken] = useState(() => JSON.parse(localStorage.getItem(storageKey + '-time') || '{}'));
 
-  // Timer & Hint States
   const [isTimerEnabled, setIsTimerEnabled] = useState(true);
   const [currentTimeElapsed, setCurrentTimeElapsed] = useState(0);
   const [hintText, setHintText] = useState(null);
   const [isGeneratingHint, setIsGeneratingHint] = useState(false);
 
-  // Filter & Sort States
   const [filterStatus, setFilterStatus] = useState('All'); 
   const [filterDiff, setFilterDiff] = useState('All');
   const [filterYear, setFilterYear] = useState('All');
   const [sortOrder, setSortOrder] = useState('Newest');
-  
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   useEffect(() => {
-    setQuestions(getQuestionsForChapter(subjectId, chapterId, displayTitle));
+    setAllQuestions(getQuestionsForChapter(subjectId, chapterId, displayTitle));
   }, [subjectId, chapterId, displayTitle]);
 
   useEffect(() => {
@@ -91,18 +98,17 @@ export const ChapterQuestions = () => {
     setHintText(null);
   }, [currentIndex]);
 
-  const totalQs = questions.length;
+  const examQuestions = allQuestions.filter(q => !q.examType || q.examType === examType);
+  const totalQs = examQuestions.length;
   const topicsCount = chapterDetails?.topics?.length || 2;
 
-  // --- FILTER & SORT LOGIC ---
-  let filteredQuestions = questions.map((q, idx) => ({ ...q, originalIndex: idx })).filter((q) => {
+  let filteredQuestions = examQuestions.map((q, idx) => ({ ...q, originalIndex: allQuestions.indexOf(q) })).filter((q) => {
     const isDone = checkedStates[q.originalIndex];
     const isCorrect = isDone && answers[q.originalIndex] === q.correctIndex;
     
     if (filterStatus === 'Attempted' && !isDone) return false;
     if (filterStatus === 'Unattempted' && isDone) return false;
     if (filterStatus === 'Incorrect' && (!isDone || isCorrect)) return false;
-    
     if (filterDiff !== 'All' && q.difficulty !== filterDiff) return false;
     if (filterYear !== 'All' && q.year !== filterYear) return false;
     
@@ -115,15 +121,28 @@ export const ChapterQuestions = () => {
     filteredQuestions.sort((a, b) => parseInt(a.year || '0') - parseInt(b.year || '0'));
   }
 
-  // --- NAVIGATION ---
-  const handleTabChange = (tab) => setSearchParams({ tab });
-  const openQuestion = (idx) => setSearchParams({ tab: activeTab, q: idx });
-  const closeQuestion = () => setSearchParams({ tab: activeTab });
+  // --- ADVANCED ROUTING LOGIC ---
+  const handleTabChange = (tab) => {
+    setSearchParams({ tab }); // This naturally wipes out `topicId` returning you to the grid!
+  };
+
+  const openQuestion = (idx) => {
+    const params = { tab: activeTab, q: idx };
+    if (selectedTopicId) params.topicId = selectedTopicId;
+    setSearchParams(params);
+  };
+
+  const closeQuestion = () => {
+    const params = { tab: activeTab };
+    if (selectedTopicId) params.topicId = selectedTopicId;
+    setSearchParams(params);
+  };
 
   const handleBackNavigation = () => {
-    if (isStarted) closeQuestion(); // Inside a question -> Back to list
-    else if (activeTab !== 'overview') handleTabChange('overview'); // Inside a tab -> Back to overview
-    else navigate('/previous-questions'); // At overview -> Back to main PYQ page
+    if (isStarted) closeQuestion(); 
+    else if (selectedTopicId) setSearchParams({ tab: 'topic' }); // Escapes the topic list view back to topic grid
+    else if (activeTab !== 'overview') handleTabChange('overview'); 
+    else navigate('/previous-questions'); 
   };
 
   const handleReattempt = () => {
@@ -138,16 +157,53 @@ export const ChapterQuestions = () => {
     setIsGeneratingHint(true);
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `Provide ONE short, strategic hint to help start this problem. DO NOT give the answer. Under 3 sentences: "${questionText}"`;
+      const prompt = `Provide ONE short, strategic hint to help start this problem. DO NOT give the answer. Use LaTeX math formatting. Under 3 sentences: "${questionText}"`;
       const result = await model.generateContent(prompt);
       setHintText(result.response.text());
     } catch (error) { setHintText("Failed to generate hint."); }
     setIsGeneratingHint(false);
   };
 
-  // --- VIEW 1: INTERACTIVE QUIZ MODE ---
+  // --- REUSABLE COMPONENT FOR A QUESTION ROW ---
+  const renderQuestionRow = (q) => {
+    const isDone = checkedStates[q.originalIndex];
+    const isCorrect = isDone && answers[q.originalIndex] === q.correctIndex;
+    
+    const topicObj = chapterDetails?.topics?.find(t => t.id === q.topic);
+    const topicName = topicObj ? topicObj.name : 'General Concept';
+    const shortTopic = topicName.includes('-') ? topicName.split('-')[1].trim() : topicName;
+
+    return (
+      <div key={q.id} onClick={() => openQuestion(q.originalIndex)} className="flex gap-6 p-6 hover:bg-white/[0.03] cursor-pointer transition-colors border-b border-[#1e293b]/60 items-center justify-between">
+        <div className="text-white/40 font-bold text-lg shrink-0 w-16 text-center border-r border-white/10 pr-2">
+          {q.year || '2023'}
+        </div>
+        <div className="flex-1 pr-6">
+          <div className="text-white/90 text-sm leading-relaxed line-clamp-3">
+            <MathText>{q.text}</MathText>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0 w-32">
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold w-full text-center tracking-wider uppercase ${q.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+            {q.difficulty || 'Medium'}
+          </span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold w-full text-center tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20 truncate" title={topicName}>
+            {shortTopic}
+          </span>
+          {isDone ? (
+            isCorrect ? <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded w-full text-center">CORRECT</span> 
+                      : <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded w-full text-center">INCORRECT</span>
+          ) : (
+            <span className="text-[10px] font-bold text-white/40 border border-white/10 bg-white/5 px-2 py-0.5 rounded w-full text-center">UNATTEMPTED</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // --- INTERACTIVE QUIZ MODE ---
   if (isStarted) {
-    const currentQ = questions[currentIndex];
+    const currentQ = allQuestions[currentIndex];
     const isChecked = checkedStates[currentIndex] || false;
     
     const handleSelectOption = (idx) => {
@@ -162,6 +218,9 @@ export const ChapterQuestions = () => {
       }
     };
 
+    const topicObj = chapterDetails?.topics?.find(t => t.id === currentQ?.topic);
+    const currentTopicName = topicObj ? topicObj.name : 'General Concept';
+
     return (
       <div className="h-screen w-full bg-[#0b1121] text-gray-100 flex flex-col font-sans relative">
         <nav className="flex items-center justify-between px-8 py-4 bg-[#111827] border-b border-white/5 shadow-md z-10">
@@ -169,7 +228,6 @@ export const ChapterQuestions = () => {
             <button onClick={handleBackNavigation} className="text-white/50 hover:text-white transition-colors"><IconBack /></button>
             <div className="text-lg font-medium hidden md:block">{displayTitle} - Practice</div>
           </div>
-          
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 bg-[#1f2937] px-4 py-1.5 rounded-full border border-white/5">
               <button onClick={() => setIsTimerEnabled(!isTimerEnabled)} className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isTimerEnabled ? 'text-sky-400' : 'text-white/30'}`}>
@@ -177,20 +235,22 @@ export const ChapterQuestions = () => {
               </button>
               {isTimerEnabled && <span className="font-mono text-white/90 w-12 text-right">{isChecked ? formatTime(timeTaken[currentIndex] || 0) : formatTime(currentTimeElapsed)}</span>}
             </div>
-            <div className="text-sm font-medium text-sky-400 border-l border-white/10 pl-6">Question {currentIndex + 1} of {totalQs}</div>
+            <div className="text-sm font-medium text-sky-400 border-l border-white/10 pl-6">Question {currentIndex + 1}</div>
           </div>
         </nav>
         
         <main className="flex-1 max-w-3xl mx-auto w-full py-8 px-6 flex flex-col overflow-y-auto custom-scrollbar">
           <div className="flex items-center gap-2 mb-4">
-            <span className={`px-2.5 py-1 rounded text-xs font-bold ${currentQ?.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400' : currentQ?.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+            <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${currentQ?.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400' : currentQ?.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
               {currentQ?.difficulty || 'Medium'}
             </span>
-            <span className="bg-white/5 border border-white/10 text-white/60 text-xs px-2.5 py-1 rounded font-medium">{currentQ?.year || '2023'}</span>
+            <span className="bg-white/5 border border-white/10 text-white/60 text-xs px-2.5 py-1 rounded font-medium uppercase tracking-wider">{currentQ?.year || '2023'}</span>
+            <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wider">{currentQ?.examType || 'Mains'}</span>
+            <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wider truncate max-w-[200px]">{currentTopicName}</span>
           </div>
 
-          <div className="p-8 rounded-2xl bg-[#1f2937]/50 border border-white/5 mb-6">
-            <h3 className="text-lg font-medium text-white/90 leading-relaxed">{currentQ?.text}</h3>
+          <div className="p-8 rounded-2xl bg-[#1f2937]/50 border border-white/5 mb-6 text-lg font-medium text-white/90 leading-relaxed">
+            <MathText>{currentQ?.text}</MathText>
           </div>
 
           <div className="flex flex-col gap-3 mb-6">
@@ -207,7 +267,8 @@ export const ChapterQuestions = () => {
               }
               return (
                 <button key={idx} onClick={() => handleSelectOption(idx)} disabled={isChecked} className={`p-4 rounded-xl border text-left transition-all ${btnStyle}`}>
-                  <span className="inline-block w-8 opacity-50 font-mono">{['A','B','C','D'][idx]}.</span> {opt}
+                  <span className="inline-block w-8 opacity-50 font-mono">{['A','B','C','D'][idx]}.</span> 
+                  <MathText>{opt}</MathText>
                 </button>
               );
             })}
@@ -222,7 +283,8 @@ export const ChapterQuestions = () => {
               )}
               {hintText && (
                 <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-100/90 text-sm leading-relaxed w-full animate-fade-in-up">
-                  <div className="font-bold text-yellow-400 mb-2 flex items-center gap-2"><IconLightbulb /> AI Hint</div>{hintText}
+                  <div className="font-bold text-yellow-400 mb-2 flex items-center gap-2">AI Hint</div>
+                  <MathText>{hintText}</MathText>
                 </div>
               )}
             </div>
@@ -231,25 +293,23 @@ export const ChapterQuestions = () => {
           {isChecked && (
             <div className="mb-8 p-6 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-100/90 text-sm leading-relaxed animate-fade-in-up">
               <div className="flex items-center gap-2 font-bold text-sky-400 mb-2">Solution Explanation</div>
-              {currentQ?.explanation}
+              <MathText>{currentQ?.explanation}</MathText>
             </div>
           )}
 
           <div className="mt-auto flex justify-between items-center border-t border-white/5 pt-6 pb-6">
             <button onClick={() => openQuestion(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="px-6 py-2.5 rounded-xl bg-[#1f2937] hover:bg-white/10 disabled:opacity-30 font-medium transition-colors">Previous</button>
-            
             <div className="flex items-center gap-4">
               {isChecked && (
                 <button onClick={handleReattempt} className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 flex items-center gap-2 font-medium transition-colors">
                   <IconRefresh /> Reattempt
                 </button>
               )}
-
               {!isChecked ? (
-                <button onClick={handleCheckAnswer} disabled={answers[currentIndex] === undefined} className="px-8 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-30 font-bold transition-colors">Check Answer</button>
+                <button onClick={handleCheckAnswer} disabled={answers[currentIndex] === undefined} className="px-8 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-30 font-bold transition-colors">Submit Answer</button>
               ) : (
-                <button onClick={() => { if (currentIndex < totalQs - 1) openQuestion(currentIndex + 1); else closeQuestion(); }} className="px-8 py-2.5 rounded-xl bg-sky-500 text-black font-bold hover:bg-sky-400 transition-colors">
-                  {currentIndex === totalQs - 1 ? "Finish" : "Next Question"}
+                <button onClick={() => { if (currentIndex < allQuestions.length - 1) openQuestion(currentIndex + 1); else closeQuestion(); }} className="px-8 py-2.5 rounded-xl bg-sky-500 text-black font-bold hover:bg-sky-400 transition-colors">
+                  Next
                 </button>
               )}
             </div>
@@ -259,28 +319,37 @@ export const ChapterQuestions = () => {
     );
   }
 
-  // --- RENDER DASHBOARD TABS ---
+  // --- DASHBOARD TAB RENDERING ---
   const renderOverview = () => (
     <div className="max-w-[1000px] mx-auto p-8 pt-12 animate-fade-in-up">
-      <div className="text-center mb-10"><h2 className="text-2xl font-bold text-white mb-2">Overview</h2></div>
+      <div className="flex flex-col items-center mb-10">
+        <h2 className="text-2xl font-bold text-white mb-6">Overview</h2>
+        <div className="flex bg-black/40 p-1.5 rounded-full border border-white/10 shadow-inner w-fit">
+          <button onClick={() => setExamType('Mains')} className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${examType === 'Mains' ? 'bg-sky-500 text-black shadow-lg shadow-sky-500/20' : 'text-white/50 hover:text-white'}`}>JEE Main</button>
+          <button onClick={() => setExamType('Advanced')} className={`px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${examType === 'Advanced' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'text-white/50 hover:text-white'}`}>JEE Advanced</button>
+        </div>
+      </div>
       <div className="bg-[#131b2c] border border-[#1e293b] rounded-2xl p-5 mb-8 flex items-center justify-between">
         <div><h3 className="text-white font-bold text-sm mb-1">Your Progress</h3></div>
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center"><IconCheck /></div>
-            <div><div className="text-white text-sm font-bold">{Object.keys(checkedStates).length}/{totalQs}</div><div className="text-[10px] text-white/40">PYQ Solved</div></div>
+            <div>
+              <div className="text-white text-sm font-bold">{Object.keys(checkedStates).length}/{totalQs}</div>
+              <div className="text-[10px] text-white/40">PYQ Solved</div>
+            </div>
           </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-5 mb-8">
         <div onClick={() => handleTabChange('all')} className="group bg-[#131b2c] border border-[#1e293b] hover:border-sky-500/30 rounded-2xl p-6 cursor-pointer transition-all relative overflow-hidden">
           <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors flex items-center gap-2">All Previous Year Qs <span className="text-lg">→</span></h3>
-          <p className="text-xs text-white/40">{totalQs} PYQs</p>
+          <p className="text-xs text-white/40">{totalQs} PYQs ({examType})</p>
           <div className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400"><IconHistory /></div>
         </div>
         <div onClick={() => handleTabChange('topic')} className="group bg-[#111c2e] border border-sky-500/20 hover:border-sky-500/40 rounded-2xl p-6 cursor-pointer transition-all relative overflow-hidden">
           <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors flex items-center gap-2">Topic-Wise PYQs <span className="text-lg">→</span></h3>
-          <p className="text-xs text-white/40">{topicsCount} Topics</p>
+          <p className="text-xs text-white/40">{topicsCount} Topics ({examType})</p>
           <div className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400"><IconList /></div>
         </div>
       </div>
@@ -289,9 +358,8 @@ export const ChapterQuestions = () => {
 
   const renderAllPYQs = () => (
     <div className="max-w-[1000px] mx-auto p-8 pt-8 relative min-h-full pb-24 animate-fade-in-up">
-      <div className="w-full bg-[#131b2c] py-4 rounded-t-2xl text-center font-bold text-white mb-6 border border-[#1e293b]">All PYQs</div>
+      <div className="w-full bg-[#131b2c] py-4 rounded-t-2xl text-center font-bold text-white mb-6 border border-[#1e293b]">All {examType} PYQs</div>
       
-      {/* Interactive Filter/Sort Bar */}
       <div className="flex flex-wrap items-center gap-3 mb-6 relative">
         <div className="relative">
           <button onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${showFilterMenu ? 'bg-sky-500/20 border-sky-500/50 text-sky-400' : 'border-[#1e293b] text-white/90 hover:bg-[#1e293b]'}`}><IconFilter /> Filter</button>
@@ -340,60 +408,59 @@ export const ChapterQuestions = () => {
         {filteredQuestions.length === 0 ? (
           <div className="p-10 text-center text-white/40">No questions match your current filters.</div>
         ) : (
-          filteredQuestions.map((q) => {
-            const isDone = checkedStates[q.originalIndex];
-            const isCorrect = isDone && answers[q.originalIndex] === q.correctIndex;
-
-            return (
-              <div key={q.id} onClick={() => openQuestion(q.originalIndex)} className="flex gap-6 p-6 hover:bg-white/[0.03] cursor-pointer transition-colors border-b border-[#1e293b]/60 items-center justify-between">
-                
-                {/* Number / Year Block (Left) */}
-                <div className="text-white/40 font-bold text-lg shrink-0 w-16 text-center border-r border-white/10 pr-2">
-                  {q.year || '2023'}
-                </div>
-                
-                {/* Question Text (Middle) */}
-                <div className="flex-1 pr-6">
-                  <div className="text-white/90 text-sm leading-relaxed line-clamp-3">
-                    {q.text}
-                  </div>
-                </div>
-
-                {/* Vertical Tags (Right) */}
-                <div className="flex flex-col items-end gap-2 shrink-0 w-28">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold w-full text-center tracking-wider uppercase ${q.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                    {q.difficulty || 'Medium'}
-                  </span>
-                  
-                  {isDone ? (
-                    isCorrect ? <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded w-full text-center">CORRECT</span> 
-                              : <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded w-full text-center">INCORRECT</span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-white/40 border border-white/10 bg-white/5 px-2 py-0.5 rounded w-full text-center">UNATTEMPTED</span>
-                  )}
-                </div>
-
-              </div>
-            )
-          })
+          filteredQuestions.map((q) => renderQuestionRow(q))
         )}
       </div>
     </div>
   );
 
-  const renderTopicWise = () => (
-    <div className="max-w-[1000px] mx-auto p-8 pt-8 animate-fade-in-up">
-      <div className="w-full bg-[#131b2c] py-4 rounded-t-2xl text-center font-bold text-white mb-6 border border-[#1e293b]">Topic-wise PYQs</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {chapterDetails?.topics?.map((topic, i) => (
-          <div key={i} onClick={() => handleTabChange('all')} className="bg-[#131b2c]/50 border border-[#1e293b] p-6 rounded-2xl hover:border-sky-500/30 hover:bg-[#131b2c] transition-colors cursor-pointer group">
-            <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase mb-2">Topic {i+1}</div>
-            <h3 className="text-white/90 font-medium mb-3 group-hover:text-white line-clamp-2 leading-snug">{topic.name}</h3>
+  const renderTopicWise = () => {
+    if (selectedTopicId) {
+      const topic = chapterDetails?.topics?.find(t => t.id === selectedTopicId);
+      const topicQs = allQuestions.filter(q => q.topic === selectedTopicId && (!q.examType || q.examType === examType)).map(q => ({...q, originalIndex: allQuestions.indexOf(q)}));
+      
+      return (
+        <div className="max-w-[1000px] mx-auto p-8 pt-8 relative min-h-full pb-24 animate-fade-in-up">
+          <button onClick={() => setSearchParams({ tab: 'topic' })} className="flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm font-bold mb-4 transition-colors">
+            <IconBack /> Back to Topics
+          </button>
+          <div className="w-full bg-[#131b2c] py-4 rounded-t-2xl text-center font-bold text-white mb-6 border border-[#1e293b]">
+            {topic?.name} PYQs ({examType})
           </div>
-        ))}
+          <div className="text-sm text-white/60 font-medium mb-4">Showing {topicQs.length} Qs</div>
+          <div className="flex flex-col border border-[#1e293b] rounded-2xl overflow-hidden bg-[#131b2c]/30">
+            {topicQs.length === 0 ? (
+              <div className="p-10 text-center text-white/40">No questions found for this topic.</div>
+            ) : (
+              topicQs.map(q => renderQuestionRow(q))
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-[1000px] mx-auto p-8 pt-8 animate-fade-in-up">
+        <div className="w-full bg-[#131b2c] py-4 rounded-t-2xl text-center font-bold text-white mb-6 border border-[#1e293b]">Topic-wise {examType} PYQs</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {chapterDetails?.topics?.map((topic, i) => {
+            const count = allQuestions.filter(q => q.topic === topic.id && (!q.examType || q.examType === examType)).length;
+            return (
+              <div key={i} onClick={() => setSearchParams({ tab: 'topic', topicId: topic.id })} className="bg-[#131b2c]/50 border border-[#1e293b] p-6 rounded-2xl hover:border-sky-500/30 hover:bg-[#131b2c] transition-colors cursor-pointer group flex flex-col h-full justify-between">
+                <div>
+                  <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase mb-2">Topic {i+1}</div>
+                  <h3 className="text-white/90 font-medium mb-3 group-hover:text-white line-clamp-2 leading-snug">{topic.name}</h3>
+                </div>
+                <div className="flex items-center gap-2 mt-auto pt-4 border-t border-white/5">
+                  <span className="bg-[#1e293b] text-white/70 text-xs px-2.5 py-1 rounded-md font-bold">{count} Questions</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-screen w-full flex bg-[#0f1523] text-gray-300 font-sans selection:bg-sky-500/30 overflow-hidden">
