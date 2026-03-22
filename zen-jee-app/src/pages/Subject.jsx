@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
@@ -22,11 +22,21 @@ const subjectLayout = {
 export default function Subject() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
-  const [activeGrade, setActiveGrade] = useState('class11');
+
+  // --- FEATURES FROM 'divye' BRANCH ---
+  // Initialize from localStorage, default to class11 if nothing is saved
+  const [activeGrade, setActiveGrade] = useState(() => {
+    return localStorage.getItem('zenjee-class') || 'class11';
+  });
+
+  // Keep localStorage in sync whenever the grade changes
+  useEffect(() => {
+    localStorage.setItem('zenjee-class', activeGrade);
+  }, [activeGrade]);
 
   const layout = subjectLayout[subjectId] || subjectLayout.physics;
 
-  // --- DIAGNOSTIC ENGINE: Calculate Topic Scores & Chapter Progress ---
+  // --- DIAGNOSTIC ENGINE: Calculate Topic Scores & Chapter Progress (From 'main' branch) ---
   const { chapterList, ringStats } = useMemo(() => {
     let strongCount = 0; let weakCount = 0; let threatCount = 0; let unattemptedCount = 0;
     
