@@ -37,6 +37,14 @@ const formatTime = (secs) => {
   return `${m}:${s}`;
 };
 
+// --- Date Helper for Daily Goal ---
+const getLocalDateStr = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const ChapterQuestions = () => {
   const { subjectId, chapterId } = useParams();
   const navigate = useNavigate();
@@ -215,6 +223,11 @@ export const ChapterQuestions = () => {
       if (answers[currentIndex] !== undefined) {
         setCheckedStates(prev => ({ ...prev, [currentIndex]: true }));
         setTimeTaken(prev => ({ ...prev, [currentIndex]: currentTimeElapsed }));
+
+        // --- NEW: Update Daily Goal Tracker ---
+        const todayStr = getLocalDateStr(new Date());
+        const currentProgress = parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0;
+        localStorage.setItem(`zenjee-progress-${todayStr}`, currentProgress + 1);
       }
     };
 

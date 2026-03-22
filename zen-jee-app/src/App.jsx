@@ -1,10 +1,11 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
 import Profile from './pages/Profile';
+import PreviousPapers from './pages/PreviousPapers'; 
+import TestEngine from './pages/TestEngine';
 import Planner from './pages/Planner'; 
 import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
@@ -33,6 +34,9 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/planner" element={<Planner />} />
         
+        {/* Mock Test Routes */}
+        <Route path="/previous-papers" element={<PreviousPapers />} />
+        <Route path="/test/:testId" element={<TestEngine />} />
         {/* Daily Spaced Repetition Route */}
         <Route path="/daily-test" element={<DailyTest />} /> {/* <-- 2. Add Route */}
       </Routes>
