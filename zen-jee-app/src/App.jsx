@@ -5,28 +5,32 @@ import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
 import Profile from './pages/Profile';
-import Planner from './pages/Planner'; // 1. Import Planner
+import Planner from './pages/Planner'; 
 import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
-import { ChapterQuestions } from './pages/ChapterQuestions.jsx'; // <-- 1. Import the new page
+import { ChapterQuestions } from './pages/ChapterQuestions.jsx'; 
+import Login from './pages/Login.jsx'; // <-- 1. Import the new Login page
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Route */}
+        <Route path="/login" element={<Login />} /> {/* <-- 2. Add Login Route */}
+
+        {/* Main Routes */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/search" element={<Search />} />
         
         {/* PYQ Routes */}
         <Route path="/previous-questions" element={<PreviousQuestions />} />
-        {/* 2. Add the dynamic route for the specific chapter's questions */}
         <Route path="/previous-questions/:subjectId/chapter/:chapterId" element={<ChapterQuestions />} /> 
         
         {/* Study Routes */}
         <Route path="/subject/:subjectId" element={<Subject />} />
         <Route path="/subject/:subjectId/chapter/:chapterId" element={<Chapter />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/planner" element={<Planner />} /> {/* 2. Add Route */}
+        <Route path="/planner" element={<Planner />} /> 
       </Routes>
     </BrowserRouter>
   );

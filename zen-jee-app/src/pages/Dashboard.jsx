@@ -78,6 +78,18 @@ const glassHover = "hover:bg-white/5 transition-all duration-300 hover:-translat
 
 export default function Dashboard() {
   const navigate = useNavigate();
+
+  // --- AUTH CHECK ---
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('zenjee-name');
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Read User Data dynamically
+  const [userName, setUserName] = useState(() => localStorage.getItem('zenjee-name') || 'Student');
+
   const [chatInput, setChatInput] = useState('');
   
   // Controls the visibility of the Profile + Calendar dropdown
@@ -110,7 +122,15 @@ export default function Dashboard() {
     }
   };
 
-  const getDisplayClass = () => selectedClass === 'class11' ? 'Class 11' : 'Class 12';
+  const getDisplayClass = () => {
+    if (selectedClass === 'dropper') return 'Dropper';
+    return selectedClass === 'class11' ? 'Class 11' : 'Class 12';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('zenjee-name');
+    navigate('/login');
+  };
 
   return (
     <div className="h-screen w-full overflow-hidden flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased">
@@ -151,7 +171,7 @@ export default function Dashboard() {
               <div className="w-full h-full bg-black rounded-full flex items-center justify-center text-lg">👨‍🎓</div>
             </div>
             <div className="text-left hidden md:block">
-              <div className="text-sm font-medium text-white/90">Nahin</div>
+              <div className="text-sm font-medium text-white/90">{userName}</div>
               <div className="text-[10px] text-white/50">{getDisplayClass()}</div>
             </div>
             <svg className={`w-4 h-4 text-white/50 transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,18 +189,31 @@ export default function Dashboard() {
                 {/* Profile Details with External Link Button */}
                 <div className="border-b border-white/10 pb-4 flex justify-between items-start">
                   <div>
-                    <h3 className="text-xl font-medium text-white tracking-wide">Nahin</h3>
-                    <p className="text-xs text-white/40 mt-1">nahin@nitrr.edu.in</p>
+                    <h3 className="text-xl font-medium text-white tracking-wide">{userName}</h3>
+                    <p className="text-xs text-white/40 mt-1">Student Account</p>
                   </div>
-                  <button 
-                    onClick={() => navigate('/profile')}
-                    className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group"
-                    title="View Full Profile"
-                  >
-                    <svg className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => navigate('/profile')}
+                      className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group"
+                      title="View Full Profile"
+                    >
+                      <svg className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={handleLogout}
+                      className="p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-full transition-colors border border-rose-500/20 group"
+                      title="Logout"
+                    >
+                      <svg className="w-4 h-4 text-rose-300 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Class & Exam Toggles */}
@@ -197,6 +230,7 @@ export default function Dashboard() {
                     <div className="flex flex-col gap-1">
                       <button onClick={() => setSelectedClass('class11')} className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${selectedClass === 'class11' ? 'bg-sky-500/40 text-white border border-sky-500/50' : 'bg-white/5 text-white/40 hover:bg-white/10 border border-transparent'}`}>CLASS 11</button>
                       <button onClick={() => setSelectedClass('class12')} className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${selectedClass === 'class12' ? 'bg-sky-500/40 text-white border border-sky-500/50' : 'bg-white/5 text-white/40 hover:bg-white/10 border border-transparent'}`}>CLASS 12</button>
+                      <button onClick={() => setSelectedClass('dropper')} className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${selectedClass === 'dropper' ? 'bg-sky-500/40 text-white border border-sky-500/50' : 'bg-white/5 text-white/40 hover:bg-white/10 border border-transparent'}`}>DROPPER</button>
                     </div>
                   </div>
                 </div>
