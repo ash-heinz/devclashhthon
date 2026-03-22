@@ -1,19 +1,19 @@
+// App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Search from './pages/Search';
-import Subject from './pages/Subject';
-import Chapter from './pages/Chapter';
+import Dashboard from './pages/Dashboard.jsx';
+import Search from './pages/Search.jsx';
+import Subject from './pages/Subject.jsx';
+import { Chapter } from './pages/Chapter.jsx';
+import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; // <-- Add this import
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* The home path "/" loads the Dashboard */}
         <Route path="/" element={<Dashboard />} />
-        
-        {/* The "/search" path loads the Search results page */}
         <Route path="/search" element={<Search />} />
+        <Route path="/previous-questions" element={<PreviousQuestions />} /> {/* <-- Add this route */}
         <Route path="/subject/:subjectId" element={<Subject />} />
         <Route path="/subject/:subjectId/chapter/:chapterId" element={<Chapter />} />
       </Routes>

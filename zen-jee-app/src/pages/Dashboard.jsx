@@ -169,11 +169,15 @@ export default function Dashboard() {
         </div>
 
         {/* 4. PRACTICE RESOURCES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
-          <div style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
-            <PyqDoodle />
-            <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
+        <div 
+          onClick={() => navigate('/previous-questions')} 
+          style={defaultGlass} 
+          className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}
+        >
+          <PyqDoodle />
+          <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
+        </div>
           
           <div style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <PypDoodle />
