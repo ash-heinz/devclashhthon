@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Dashboard from './pages/Dashboard.jsx'; // Add .jsx
-import Search from './pages/Search.jsx';       // Add .jsx
-import Subject from './pages/Subject.jsx';     // Add .jsx
-import Chapter from './pages/Chapter.jsx';     // Add .jsx
+import Dashboard from './pages/Dashboard';
+import Search from './pages/Search';
+import Subject from './pages/Subject';
+import Chapter from './pages/Chapter';
 
 export default function App() {
   return (
