@@ -122,8 +122,11 @@ export default function Subject() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
 
-  const [activeGrade, setActiveGrade] = useState('class11'); // 'class11' or 'class12'
-
+  // Initialize from localStorage, default to class12 if nothing is saved
+  const [activeGrade, setActiveGrade] = useState(() => {
+    return localStorage.getItem('zenjee-class') || 'class12';
+  });
+  
   const data = subjectData[subjectId] || subjectData.physics;
   const isChemistry = subjectId === 'chemistry';
 

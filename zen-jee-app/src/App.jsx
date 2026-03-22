@@ -4,18 +4,19 @@ import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
 import Chapter from './pages/Chapter';
+import Profile from './pages/Profile';
+import Planner from './pages/Planner'; // 1. Import Planner
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* The home path "/" loads the Dashboard */}
         <Route path="/" element={<Dashboard />} />
-        
-        {/* The "/search" path loads the Search results page */}
         <Route path="/search" element={<Search />} />
         <Route path="/subject/:subjectId" element={<Subject />} />
         <Route path="/subject/:subjectId/chapter/:chapterId" element={<Chapter />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/planner" element={<Planner />} /> {/* 2. Add Route */}
       </Routes>
     </BrowserRouter>
   );
