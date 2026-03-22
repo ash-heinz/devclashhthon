@@ -345,23 +345,34 @@ export const ChapterQuestions = () => {
             const isCorrect = isDone && answers[q.originalIndex] === q.correctIndex;
 
             return (
-              <div key={q.id} onClick={() => openQuestion(q.originalIndex)} className="flex gap-4 p-6 hover:bg-white/[0.03] cursor-pointer transition-colors border-b border-[#1e293b]/60 relative">
-                <div className="absolute top-6 right-6 flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${q.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400' : q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400'}`}>{q.difficulty || 'Medium'}</span>
-                  <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] px-2 py-0.5 rounded font-medium">{q.year || '2023'}</span>
-                  {isDone ? (isCorrect ? <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded ml-2">CORRECT</span> : <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded ml-2">INCORRECT</span>) : <span className="text-[10px] font-bold text-white/20 border border-white/10 px-2 py-0.5 rounded ml-2">UNATTEMPTED</span>}
+              <div key={q.id} onClick={() => openQuestion(q.originalIndex)} className="flex gap-6 p-6 hover:bg-white/[0.03] cursor-pointer transition-colors border-b border-[#1e293b]/60 items-center justify-between">
+                
+                {/* Number / Year Block (Left) */}
+                <div className="text-white/40 font-bold text-lg shrink-0 w-16 text-center border-r border-white/10 pr-2">
+                  {q.year || '2023'}
                 </div>
-                <div className="text-white/80 font-bold text-sm mt-0.5 shrink-0 w-6">{q.originalIndex + 1}</div>
-                <div className="flex-1 pr-40">
-                  <div className="text-white/90 text-sm leading-relaxed mb-4">{q.text}</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {q.options.map((opt, oIdx) => (
-                      <div key={oIdx} className={`text-sm bg-[#0f1523] px-3 py-2 rounded-lg border truncate ${isDone && q.correctIndex === oIdx ? 'border-emerald-500/50 text-emerald-300' : isDone && answers[q.originalIndex] === oIdx ? 'border-rose-500/50 text-rose-300' : 'border-[#1e293b]/50 text-white/70'}`}>
-                        <span className="opacity-50 mr-2">{['A','B','C','D'][oIdx]}.</span> {opt}
-                      </div>
-                    ))}
+                
+                {/* Question Text (Middle) */}
+                <div className="flex-1 pr-6">
+                  <div className="text-white/90 text-sm leading-relaxed line-clamp-3">
+                    {q.text}
                   </div>
                 </div>
+
+                {/* Vertical Tags (Right) */}
+                <div className="flex flex-col items-end gap-2 shrink-0 w-28">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold w-full text-center tracking-wider uppercase ${q.difficulty === 'Hard' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : q.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                    {q.difficulty || 'Medium'}
+                  </span>
+                  
+                  {isDone ? (
+                    isCorrect ? <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded w-full text-center">CORRECT</span> 
+                              : <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded w-full text-center">INCORRECT</span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-white/40 border border-white/10 bg-white/5 px-2 py-0.5 rounded w-full text-center">UNATTEMPTED</span>
+                  )}
+                </div>
+
               </div>
             )
           })

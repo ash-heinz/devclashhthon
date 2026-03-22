@@ -163,7 +163,7 @@ export const Chapter = () => {
 
                 <YouTubeTopicName videoId={topic.videoId} fallbackName={topic.name} isAdvanced={topic.isAdvanced} />
 
-                <a href={`https://www.youtube.com/watch?v=${topic.videoId}`} target="_blank" rel="noreferrer" className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full">
+                <a href={`https://www.  youtube.com/watch?v=${topic.videoId}`} target="_blank" rel="noreferrer" className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full">
                   <img src={thumbnailUrl} alt={topic.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/10">
@@ -181,8 +181,11 @@ export const Chapter = () => {
 
                 <div className="flex flex-col justify-center">
                   <div className="text-xs text-white/80 mb-2 font-medium">{topic.questions}</div>
-                  <button className="px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 transition-colors border border-indigo-500/20 text-center w-full">
-                    Solve Now
+                  <button 
+                    onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}?tab=topic`, { state: { chapterName: displayTitle } })}
+                    className="px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 transition-colors border border-indigo-500/20 text-center w-full"
+                  >
+                    Solve Topic PYQs
                   </button>
                 </div>
               </div>
