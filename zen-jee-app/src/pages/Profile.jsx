@@ -1,3 +1,4 @@
+// src/pages/Profile.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
@@ -62,7 +63,16 @@ const getLocalDateStr = (d) => {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [targetExam, setTargetExam] = useState('Mains');
+  
+  const [examDate, setExamDate] = useState(() => 
+    localStorage.getItem('zenjee-exam-date') || '2026-01-24'
+  );
+
+  const [targetExam, setTargetExam] = useState(() => {
+    const savedExam = localStorage.getItem('zenjee-exam') || 'Mains';
+    return savedExam.charAt(0).toUpperCase() + savedExam.slice(1);
+  });
+  
   const [selectedClass, setSelectedClass] = useState('Class 12');
   const [chartView, setChartView] = useState('overall'); 
   
@@ -74,8 +84,6 @@ export default function Profile() {
   const [dailyProgress, setDailyProgress] = useState(() => parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
 
   useEffect(() => {
-    const savedExam = localStorage.getItem('zenjee-exam') || 'mains';
-    setTargetExam(savedExam.charAt(0).toUpperCase() + savedExam.slice(1));
     const savedClass = localStorage.getItem('zenjee-class') || 'class12';
     setSelectedClass(savedClass === 'class11' ? 'Class 11' : savedClass === 'class12' ? 'Class 12' : 'Dropper');
     
@@ -88,6 +96,20 @@ export default function Profile() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [todayStr]);
 
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setExamDate(newDate);
+    localStorage.setItem('zenjee-exam-date', newDate);
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleExamChange = (examType) => {
+    setTargetExam(examType);
+    localStorage.setItem('zenjee-exam', examType.toLowerCase());
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  // --- DIAGNOSTIC ENGINE FOR OVERALL PROFILE ---
   const { overallStats, subjectStats, weeklyStats } = useMemo(() => {
     let overall = { strong: 0, weak: 0, threat: 0, unattempted: 0, total: 0 };
     let subj = {
@@ -182,21 +204,37 @@ export default function Profile() {
               <div className="flex items-start gap-4">
                 <div className="mt-0.5"><CalendarIcon /></div>
                 <div>
-                  <div className="text-sm text-white/50 font-medium mb-1 tracking-wide uppercase">Target Exam Date</div>
+                  <div className="text-sm text-white/70 font-medium mb-1 tracking-wide">Target Exam Date</div>
+                  {/* FIXED 1: Date Input with onClick to force picker */}
                   <input 
                     type="date" 
                     style={{ colorScheme: 'dark' }}
-                    value={localStorage.getItem('zenjee-exam-date') || '2026-01-24'}
-                    onChange={(e) => {
-                      localStorage.setItem('zenjee-exam-date', e.target.value);
-                      window.dispatchEvent(new Event('storage'));
-                    }}
-                    className="bg-transparent text-xl font-bold text-sky-400 outline-none cursor-pointer w-full hover:text-sky-300 transition-colors"
+                    value={examDate}
+                    onChange={handleDateChange}
+                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                    className="bg-transparent text-[1.15rem] font-bold text-sky-400 outline-none cursor-pointer w-full"
                   />
                 </div>
               </div>
-              <div className="text-xs font-bold text-white/80 bg-white/10 px-4 py-2 rounded-xl border border-white/10 uppercase tracking-widest">
-                JEE {targetExam}
+              
+              {/* FIXED 2: Dual Toggle Button for Mains and Advanced */}
+              <div className="flex bg-black/40 p-1 rounded-full border border-white/10 shadow-inner">
+                <button 
+                  onClick={() => handleExamChange('Mains')} 
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                    targetExam.toLowerCase() === 'mains' ? 'bg-sky-500 text-black shadow-[0_0_10px_rgba(14,165,233,0.4)]' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  Mains
+                </button>
+                <button 
+                  onClick={() => handleExamChange('Advanced')} 
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                    targetExam.toLowerCase() === 'advanced' ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.4)]' : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  Advanced
+                </button>
               </div>
             </div>
           </div>
@@ -259,17 +297,24 @@ export default function Profile() {
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500 opacity-20 blur-[60px] rounded-full pointer-events-none`} />
 
             <div className="flex flex-col items-center mb-8 w-full relative z-10">
-              <h3 className="text-lg font-bold text-white tracking-wider uppercase mb-4">Mastery Profile</h3>
-              <select 
-                value={chartView} 
-                onChange={(e) => setChartView(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium text-white/80 outline-none w-full text-center hover:bg-white/5 cursor-pointer transition-colors"
-              >
-                <option value="overall">All Subjects</option>
-                <option value="physics">Physics Only</option>
-                <option value="chemistry">Chemistry Only</option>
-                <option value="mathematics">Math Only</option>
-              </select>
+              <h3 className="text-lg font-bold text-white tracking-wider uppercase mb-3">Overall Mastery</h3>
+              
+              {/* FIXED 3: Custom dropdown styling for Windows visibility */}
+              <div className="relative w-full">
+                <select 
+                  value={chartView} 
+                  onChange={(e) => setChartView(e.target.value)}
+                  className="bg-[#1C202B] border border-white/20 rounded-lg px-4 py-2.5 text-sm font-medium text-white outline-none w-full text-center hover:bg-[#2A2E3B] cursor-pointer appearance-none shadow-sm transition-colors"
+                >
+                  <option value="overall" className="bg-[#1C202B] text-white">All Subjects</option>
+                  <option value="physics" className="bg-[#1C202B] text-white">Physics Only</option>
+                  <option value="chemistry" className="bg-[#1C202B] text-white">Chemistry Only</option>
+                  <option value="mathematics" className="bg-[#1C202B] text-white">Math Only</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 text-xs">
+                  ▼
+                </div>
+              </div>
             </div>
 
             {/* SVG Ring Chart */}

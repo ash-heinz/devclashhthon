@@ -1,3 +1,4 @@
+// src/pages/Planner.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -16,6 +17,7 @@ export default function Planner() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [targetExamUI, setTargetExamUI] = useState('Mains');
 
   useEffect(() => {
     checkAndGeneratePlan();
@@ -60,12 +62,19 @@ export default function Planner() {
   const checkAndGeneratePlan = async (forceRefresh = false) => {
     setLoading(true);
     const userStats = analyzeUserProgress();
-    const currentSignature = userStats.weakTopics.join('|');
+    
+    // Fetch Target Exam from Storage
+    const targetExam = (localStorage.getItem('zenjee-exam') || 'mains').toLowerCase();
+    const displayExam = targetExam.charAt(0).toUpperCase() + targetExam.slice(1);
+    setTargetExamUI(displayExam);
+
+    // NEW: Signature now includes the target exam so toggling exams forces a fresh plan
+    const currentSignature = userStats.weakTopics.join('|') + '|' + targetExam;
     
     const cachedPlan = localStorage.getItem('zenjee-planner-data');
     const cachedSignature = localStorage.getItem('zenjee-planner-sig');
 
-    // ONLY regenerate if the weak topics changed or user clicks refresh!
+    // ONLY regenerate if weak topics changed, exam changed, or user clicks refresh
     if (!forceRefresh && cachedPlan && cachedSignature === currentSignature) {
       setPlan(JSON.parse(cachedPlan));
       setLoading(false);
@@ -78,7 +87,6 @@ export default function Planner() {
     }
 
     try {
-      const targetExam = localStorage.getItem('zenjee-exam') || 'mains';
       const examDateStr = localStorage.getItem('zenjee-exam-date') || '2026-01-24';
       const examDate = new Date(examDateStr);
       let daysLeft = Math.floor((examDate - new Date()) / (1000 * 60 * 60 * 24));
@@ -89,22 +97,31 @@ export default function Planner() {
         ? `YOU MUST PRIORITIZE THESE WEAK AREAS on Day 1 and Day 2: ${userStats.weakTopics.join(', ')}` 
         : `Student is performing well. Focus on advancing syllabus.`;
 
+      // NEW: AI Strategy injection based on Exam Type
+      const examStrategy = targetExam === 'advanced'
+        ? "STRATEGY: Prioritize deep, multi-concept chapters (e.g., Rotational Mechanics, Definite Integration, complex Organic synthesis). Schedule high-difficulty problem solving, subjective-level depth, and conceptual clarity over speed. Combine topics where applicable."
+        : "STRATEGY: Prioritize high-weightage JEE Main independent topics, breadth of syllabus coverage, direct formula application, and speed-solving. Ensure thorough coverage of standard PYQs.";
+
       const prompt = `
         You are an autonomous, highly intelligent JEE study planner. 
-        Days left until target exam: ${daysLeft}. Target Exam: JEE ${targetExam.toUpperCase()}.
+        Days left until target exam: ${daysLeft}. Target Exam: JEE ${displayExam}.
         
         User's Live Analytics:
         - Syllabus Coverage: ~${coveragePct}% complete.
         - ${weakAreasContext}
         
-        Generate a highly optimized daily study plan for the next 4 days. Prioritize weak topics heavily.
-        You MUST respond ONLY with a valid, raw JSON array of objects. No markdown.
+        ${examStrategy}
+        
+        Generate a highly optimized daily study plan for the next 4 days based on the above strategy.
+        You MUST respond ONLY with a valid, raw JSON array of objects. No markdown formatting.
         Format EXACTLY like this: [{"day": "Day 1", "date": "Tomorrow", "subject": "Physics", "focus": "Chapter Name", "task": "Solve 20 PYQs to fix weak area.", "color": "sky"}]
       `;
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       let textResponse = result.response.text().replace(/```json/gi, '').replace(/```/gi, '').trim();
+      
+      // Clean up potential markdown or extra text
       const startIdx = textResponse.indexOf('[');
       const endIdx = textResponse.lastIndexOf(']');
       if(startIdx !== -1 && endIdx !== -1) textResponse = textResponse.substring(startIdx, endIdx + 1);
@@ -117,7 +134,8 @@ export default function Planner() {
       localStorage.setItem('zenjee-planner-sig', currentSignature);
 
     } catch (err) {
-      setError("The autonomous agent failed to generate a plan.");
+      console.error(err);
+      setError("The autonomous agent failed to generate a plan. Please try refreshing.");
     } finally {
       setLoading(false);
     }
@@ -133,8 +151,9 @@ export default function Planner() {
           <button onClick={() => checkAndGeneratePlan(true)} className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors">
             <RefreshIcon /> Refresh Plan
           </button>
+          {/* UPDATED: Dynamic Badge showing which exam is targeted */}
           <div className="flex items-center gap-2 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-4 py-2 rounded-full text-sm font-medium">
-            <SparkleIcon /> <span>Autonomous AI Active</span>
+            <SparkleIcon /> <span>AI Active ({targetExamUI})</span>
           </div>
         </div>
       </div>
@@ -142,7 +161,7 @@ export default function Planner() {
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-medium text-white/90 mb-2">My Study Space</h1>
-          <p className="text-white/50 text-sm">Your schedule strictly targets your actual weak areas based on your daily PYQ performance.</p>
+          <p className="text-white/50 text-sm">Your schedule strictly targets your actual weak areas and prioritizes <strong>JEE {targetExamUI}</strong> mechanics.</p>
         </div>
 
         {loading && (
