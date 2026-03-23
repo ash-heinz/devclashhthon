@@ -1,9 +1,16 @@
-// src/pages/Profile.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
+import { mockQuestions } from '../data/mockTests.js'; // <-- IMPORT MOCK QUESTIONS
 import { authService } from '../services/auth.js';
+
+// --- SYLLABUS LAYOUT MAPPING (Matches Subject.jsx) ---
+const subjectLayout = {
+  physics: { syllabus: { class11: ['p_u1', 'p_u2', 'p_u3', 'p_u4', 'p_u5', 'p_u6', 'p_u7', 'p_u8', 'p_u9', 'p_u10'], class12: ['p_u11', 'p_u12', 'p_u13', 'p_u14', 'p_u15', 'p_u16', 'p_u17', 'p_u18', 'p_u19', 'p_u20'] } },
+  chemistry: { syllabus: { class11: ['c_u1', 'c_u2', 'c_u4', 'c_u6', 'c_u9', 'c_u3', 'c_u10', 'c_u13', 'c_u14', 'c_u15'], class12: ['c_u5', 'c_u7', 'c_u8', 'c_u10_2', 'c_u11', 'c_u12', 'c_u16', 'c_u17', 'c_u18', 'c_u19', 'c_u20'] } },
+  mathematics: { syllabus: { class11: ['m_u1', 'm_u2', 'm_u4', 'm_u5', 'm_u6', 'm_u10_1', 'm_u10_2', 'm_u14_1'], class12: ['m_u3', 'm_u7', 'm_u8', 'm_u9', 'm_u11', 'm_u12', 'm_u13', 'm_u14_2'] } }
+};
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white/70">
@@ -78,7 +85,6 @@ export default function Profile() {
   
   const user = authService.getCurrentUser();
 
-  // Load Daily Goal from Storage
   const todayStr = getLocalDateStr(new Date());
   const [dailyGoal, setDailyGoal] = useState(() => parseInt(localStorage.getItem('zenjee-daily-goal')) || 30);
   const [dailyProgress, setDailyProgress] = useState(() => parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
@@ -87,7 +93,6 @@ export default function Profile() {
     const savedClass = localStorage.getItem('zenjee-class') || 'class12';
     setSelectedClass(savedClass === 'class11' ? 'Class 11' : savedClass === 'class12' ? 'Class 12' : 'Dropper');
     
-    // Make sure we dynamically read goal if it updates elsewhere
     const handleStorageChange = () => {
       setDailyGoal(parseInt(localStorage.getItem('zenjee-daily-goal')) || 30);
       setDailyProgress(parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
@@ -109,7 +114,7 @@ export default function Profile() {
     window.dispatchEvent(new Event('storage'));
   };
 
-  // --- DIAGNOSTIC ENGINE FOR OVERALL PROFILE ---
+  // --- DIAGNOSTIC ENGINE: Mirrored from Subject.jsx ---
   const { overallStats, subjectStats, weeklyStats } = useMemo(() => {
     let overall = { strong: 0, weak: 0, threat: 0, unattempted: 0, total: 0 };
     let subj = {
@@ -119,16 +124,30 @@ export default function Profile() {
     };
     let totalQsSolved = 0; let totalQsCorrect = 0;
 
+    // Determine which chapters to load based on the user's selected Class
+    const classFilter = selectedClass === 'Class 11' ? ['class11'] : 
+                        selectedClass === 'Class 12' ? ['class12'] : 
+                        ['class11', 'class12'];
+
     ['physics', 'chemistry', 'mathematics'].forEach(subjectId => {
-      Object.keys(allChaptersData[subjectId] || {}).forEach(chapterId => {
-        if (chapterId === 'colorText' || chapterId === 'colorHex') return;
-        const chapter = allChaptersData[subjectId][chapterId];
+      let validChapters = [];
+      classFilter.forEach(cls => {
+        if (subjectLayout[subjectId]?.syllabus[cls]) {
+           validChapters = validChapters.concat(subjectLayout[subjectId].syllabus[cls]);
+        }
+      });
+
+      validChapters.forEach(chapterId => {
+        const chapter = allChaptersData[subjectId]?.[chapterId];
+        if (!chapter) return;
+        
         const topics = chapter.topics || [];
         const questions = getQuestionsForChapter(subjectId, chapterId, chapter.name);
         
         const savedAns = JSON.parse(localStorage.getItem(`zenjee-answers-${chapterId}-ans`) || '{}');
         const savedChk = JSON.parse(localStorage.getItem(`zenjee-answers-${chapterId}-chk`) || '{}');
 
+        // 1. Regular Topics (Lectures)
         topics.forEach(topic => {
           const topicQs = questions.filter(q => q.topic === topic.id);
           let correct = 0; let attempted = 0;
@@ -151,11 +170,34 @@ export default function Profile() {
           }
           overall.total++; subj[subjectId].total++;
         });
+
+        // 2. Mock Tests Integration (Just like Subject.jsx)
+        const mockQs = mockQuestions.filter(q => q.chapterId === chapterId);
+        if (mockQs.length > 0) {
+          let mockCorrect = 0; let mockAttempted = 0;
+          mockQs.forEach(q => {
+            const globalQId = `mock_${q.id}`;
+            if (savedChk[globalQId]) {
+              mockAttempted++; totalQsSolved++;
+              if (savedAns[globalQId] === q.correct) { mockCorrect++; totalQsCorrect++; }
+            }
+          });
+
+          if (mockAttempted > 0) {
+            const score = Math.round((mockCorrect / mockAttempted) * 100);
+            if (score >= 70) { overall.strong++; subj[subjectId].strong++; }
+            else if (score >= 40) { overall.weak++; subj[subjectId].weak++; }
+            else { overall.threat++; subj[subjectId].threat++; }
+          } else {
+            overall.unattempted++; subj[subjectId].unattempted++;
+          }
+          overall.total++; subj[subjectId].total++;
+        }
       });
     });
     
     return { overallStats: overall, subjectStats: subj, weeklyStats: { solved: totalQsSolved, correct: totalQsCorrect } };
-  }, []);
+  }, [selectedClass]);
 
   const activeStats = chartView === 'overall' ? overallStats : subjectStats[chartView];
   const total = activeStats.total || 1;
@@ -171,7 +213,6 @@ export default function Profile() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased overflow-y-auto custom-scrollbar">
       
-      {/* FIXED NAVBAR: Removed mt-3 to align properly */}
       <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-50 relative">
         <div className="text-2xl font-semibold tracking-wider text-white flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
           Zen<span className="text-sky-300 font-extralight">JEE</span>
@@ -183,7 +224,6 @@ export default function Profile() {
 
       <main className="w-full max-w-[1400px] mx-auto p-6 md:p-10 flex flex-col lg:flex-row gap-10">
         
-        {/* LEFT 70%: PROFILE & ACTIVITY */}
         <div className="w-full lg:w-[70%] flex flex-col gap-8 pr-4">
           <div className="flex items-center gap-6 px-2">
             <div className="w-[96px] h-[96px] rounded-full bg-gradient-to-tr from-indigo-500 to-sky-400 p-[3px] shadow-lg">
@@ -194,7 +234,7 @@ export default function Profile() {
               <p className="text-sm text-white/50">{user?.email || 'student@jee.com'}</p>
               <div className="flex items-center gap-3 mt-2">
                 <span className="px-3 py-1 rounded-md bg-white/5 border border-white/10 text-xs font-bold text-white/70 tracking-wider uppercase">{selectedClass}</span>
-                <span className="px-3 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-xs font-bold text-sky-300 tracking-wider uppercase">Target: 2026</span>
+                <span className="px-3 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-xs font-bold text-sky-300 tracking-wider uppercase">Target: {new Date(examDate).getFullYear() || 2026}</span>
               </div>
             </div>
           </div>
@@ -205,7 +245,6 @@ export default function Profile() {
                 <div className="mt-0.5"><CalendarIcon /></div>
                 <div>
                   <div className="text-sm text-white/70 font-medium mb-1 tracking-wide">Target Exam Date</div>
-                  {/* FIXED 1: Date Input with onClick to force picker */}
                   <input 
                     type="date" 
                     style={{ colorScheme: 'dark' }}
@@ -217,7 +256,6 @@ export default function Profile() {
                 </div>
               </div>
               
-              {/* FIXED 2: Dual Toggle Button for Mains and Advanced */}
               <div className="flex bg-black/40 p-1 rounded-full border border-white/10 shadow-inner">
                 <button 
                   onClick={() => handleExamChange('Mains')} 
@@ -291,7 +329,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* RIGHT 30%: OVERALL RING CHART */}
         <div className="w-full lg:w-[30%] shrink-0 flex flex-col items-center">
           <div style={cardGlass} className="w-full p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center relative overflow-hidden">
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500 opacity-20 blur-[60px] rounded-full pointer-events-none`} />
@@ -299,7 +336,6 @@ export default function Profile() {
             <div className="flex flex-col items-center mb-8 w-full relative z-10">
               <h3 className="text-lg font-bold text-white tracking-wider uppercase mb-3">Overall Mastery</h3>
               
-              {/* FIXED 3: Custom dropdown styling for Windows visibility */}
               <div className="relative w-full">
                 <select 
                   value={chartView} 
@@ -317,7 +353,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* SVG Ring Chart */}
             <div className="relative w-52 h-52 mb-10 z-10">
               <svg className="w-full h-full -rotate-90 transform drop-shadow-xl" viewBox="0 0 140 140">
                 <circle cx="70" cy="70" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
@@ -332,7 +367,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Chart Legend */}
             <div className="w-full space-y-4 z-10">
               <div className="flex justify-between items-center text-sm font-medium">
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span><span className="text-emerald-100">Strengths (&gt;70%)</span></div>
