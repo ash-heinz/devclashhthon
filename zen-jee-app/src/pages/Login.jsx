@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.js';
@@ -19,8 +18,9 @@ export default function Login() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userClass, setUserClass] = useState('class12');
+  const [targetExam, setTargetExam] = useState('mains');
 
-  // If already logged in, redirect to dashboard
   useEffect(() => {
     if (authService.getCurrentUser()) {
       navigate('/');
@@ -38,10 +38,8 @@ export default function Login() {
       } else {
         if (!name.trim()) throw new Error("Name is required.");
         if (password.length < 6) throw new Error("Password must be at least 6 characters.");
-        await authService.register(name, email, password);
+        await authService.register(name, email, password, userClass, targetExam);
       }
-      
-      // Success! Route to dashboard
       navigate('/');
     } catch (err) {
       setError(err.message);
@@ -54,7 +52,7 @@ export default function Login() {
     <div className="min-h-screen w-full flex bg-[#050810] text-gray-100 font-sans selection:bg-indigo-500/30">
       
       {/* LEFT SIDE: Branding / Graphics */}
-      <div className="hidden lg:flex w-1/2 relative flex-col justify-center items-center p-12 overflow-hidden bg-gradient-to-br from-[#0b1121] to-[#050810] border-r border-white/5">
+      <div className="hidden lg:flex w-1/2 relative flex-col justify-center items-center p-12 overflow-hidden bg-gradient-to-br from-[#000a24] to-[#050810] border-r border-white/5">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none" />
         
@@ -91,7 +89,6 @@ export default function Login() {
 
         <div style={getGlassStyle(255,255,255, 0.03, 0.08)} className="w-full max-w-md p-10 rounded-3xl shadow-2xl relative z-10 backdrop-blur-xl">
           
-          {/* Mobile Branding */}
           <div className="lg:hidden text-3xl font-bold tracking-wider text-center text-white mb-8">
             Zen<span className="text-sky-400 font-extralight">JEE</span>
           </div>
@@ -111,26 +108,38 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {!isLogin && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Full Name</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Rahul Kumar" 
-                  className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
-                />
-              </div>
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Full Name</label>
+                  <input 
+                    type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Rahul Kumar" 
+                    className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Class</label>
+                    <select value={userClass} onChange={(e) => setUserClass(e.target.value)} className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors appearance-none cursor-pointer">
+                      <option value="class11">Class 11</option>
+                      <option value="class12">Class 12</option>
+                      <option value="dropper">Dropper</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Target Exam</label>
+                    <select value={targetExam} onChange={(e) => setTargetExam(e.target.value)} className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors appearance-none cursor-pointer">
+                      <option value="mains">JEE Main</option>
+                      <option value="advanced">JEE Advanced</option>
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Email Address</label>
               <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="student@jee.com" 
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="student@jee.com" 
                 className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
               />
             </div>
@@ -138,37 +147,24 @@ export default function Login() {
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center pr-1">
                 <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Password</label>
-                {isLogin && <button type="button" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot?</button>}
               </div>
               <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••" 
+                type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" 
                 className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
               />
             </div>
 
             <button 
-              type="submit" 
-              disabled={loading}
+              type="submit" disabled={loading}
               className="mt-4 w-full py-3.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(99,102,241,0.2)] disabled:opacity-50 flex justify-center items-center h-[52px]"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
-              )}
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
           <div className="mt-8 text-center text-sm text-white/50">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => { setIsLogin(!isLogin); setError(''); }} 
-              className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors"
-            >
+            <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">
               {isLogin ? 'Sign up' : 'Log in'}
             </button>
           </div>

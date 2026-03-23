@@ -1,28 +1,26 @@
 // src/services/auth.js
 
-// This is a Mock Backend using LocalStorage to simulate a real database.
-// When you build your real Node.js/Express backend, simply replace the 
-// contents of these functions with fetch() or axios calls to your API!
-
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const authService = {
-  register: async (name, email, password) => {
+  register: async (name, email, password, userClass, targetExam) => {
     await delay(800); // Simulate network latency
     
-    // 1. Check if user already exists
     const users = JSON.parse(localStorage.getItem('zenjee_users') || '[]');
     if (users.find(u => u.email === email)) {
       throw new Error("An account with this email already exists.");
     }
 
-    // 2. Create new user (In a real backend, passwords would be hashed!)
-    const newUser = { id: Date.now().toString(), name, email, password };
+    const newUser = { id: Date.now().toString(), name, email, password, userClass, targetExam };
     users.push(newUser);
     
-    // 3. Save to DB and establish session
     localStorage.setItem('zenjee_users', JSON.stringify(users));
     localStorage.setItem('zenjee_session', JSON.stringify(newUser));
+    
+    // Sync global app state
+    localStorage.setItem('zenjee-class', userClass);
+    localStorage.setItem('zenjee-exam', targetExam);
+    localStorage.setItem('zenjee-name', name);
     
     return newUser;
   },
@@ -38,11 +36,18 @@ export const authService = {
     }
 
     localStorage.setItem('zenjee_session', JSON.stringify(user));
+    
+    // Sync global app state
+    localStorage.setItem('zenjee-class', user.userClass || 'class12');
+    localStorage.setItem('zenjee-exam', user.targetExam || 'mains');
+    localStorage.setItem('zenjee-name', user.name);
+
     return user;
   },
 
   logout: () => {
     localStorage.removeItem('zenjee_session');
+    localStorage.removeItem('zenjee-name');
   },
 
   getCurrentUser: () => {
