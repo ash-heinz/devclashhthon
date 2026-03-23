@@ -64,7 +64,9 @@ export const ChapterQuestions = () => {
   const displayTitle = location.state?.chapterName || chapterDetails?.name || `Chapter ${chapterId}`;
   
   const [allQuestions, setAllQuestions] = useState([]);
-  const [examType, setExamType] = useState('Mains');
+  const [examType, setExamType] = useState(() => {
+    return localStorage.getItem('zenjee-exam') === 'advanced' ? 'Advanced' : 'Mains';
+  });
 
   const storageKey = `zenjee-answers-${chapterId}`;
   const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem(storageKey + '-ans') || '{}'));

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
-import { authService } from '../services/auth.js'; // <-- Import Auth
+import { authService } from '../services/auth.js';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white/70">
@@ -53,21 +53,40 @@ const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
 const defaultGlass = getGlassStyle(255, 255, 255, 0.04, 0.1);
 const cardGlass = getGlassStyle(255, 255, 255, 0.02, 0.05);
 
+const getLocalDateStr = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Profile() {
   const navigate = useNavigate();
   const [targetExam, setTargetExam] = useState('Mains');
   const [selectedClass, setSelectedClass] = useState('Class 12');
   const [chartView, setChartView] = useState('overall'); 
   
-  // --- FETCH ACTUAL USER ---
   const user = authService.getCurrentUser();
+
+  // Load Daily Goal from Storage
+  const todayStr = getLocalDateStr(new Date());
+  const [dailyGoal, setDailyGoal] = useState(() => parseInt(localStorage.getItem('zenjee-daily-goal')) || 30);
+  const [dailyProgress, setDailyProgress] = useState(() => parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
 
   useEffect(() => {
     const savedExam = localStorage.getItem('zenjee-exam') || 'mains';
     setTargetExam(savedExam.charAt(0).toUpperCase() + savedExam.slice(1));
     const savedClass = localStorage.getItem('zenjee-class') || 'class12';
     setSelectedClass(savedClass === 'class11' ? 'Class 11' : savedClass === 'class12' ? 'Class 12' : 'Dropper');
-  }, []);
+    
+    // Make sure we dynamically read goal if it updates elsewhere
+    const handleStorageChange = () => {
+      setDailyGoal(parseInt(localStorage.getItem('zenjee-daily-goal')) || 30);
+      setDailyProgress(parseInt(localStorage.getItem(`zenjee-progress-${todayStr}`)) || 0);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [todayStr]);
 
   const { overallStats, subjectStats, weeklyStats } = useMemo(() => {
     let overall = { strong: 0, weak: 0, threat: 0, unattempted: 0, total: 0 };
@@ -130,7 +149,8 @@ export default function Profile() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased overflow-y-auto custom-scrollbar">
       
-      <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-50 relative mt-3">
+      {/* FIXED NAVBAR: Removed mt-3 to align properly */}
+      <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-50 relative">
         <div className="text-2xl font-semibold tracking-wider text-white flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
           Zen<span className="text-sky-300 font-extralight">JEE</span>
         </div>
@@ -185,14 +205,18 @@ export default function Profile() {
             <h2 className="text-[1.1rem] font-bold text-white/90 mb-4 px-1">My Learning Activity</h2>
             <div style={cardGlass} className="rounded-2xl p-8 shadow-lg">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-10">
-                <div className="text-[0.95rem] font-bold text-white/90 whitespace-nowrap">Your Daily Goal ({Math.min(25, weeklyStats.solved)}/25 Qs)</div>
+                <div className="text-[0.95rem] font-bold text-white/90 whitespace-nowrap">Your Daily Goal ({Math.min(dailyGoal, dailyProgress)}/{dailyGoal} Qs)</div>
                 <div className="relative w-full flex items-center justify-between px-2 h-10">
                   <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-[3px] bg-white/5 rounded-full z-0"></div>
-                  {ProgressNodes.map((icon, i) => (
-                    <div key={i} className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs border ${weeklyStats.solved > i * 5 ? 'bg-sky-500 border-sky-400 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' : 'bg-[#000a24] border-white/10 text-white/20'}`}>
-                      {icon}
-                    </div>
-                  ))}
+                  {ProgressNodes.map((icon, i) => {
+                    const threshold = (i + 1) * (dailyGoal / ProgressNodes.length);
+                    const isActive = dailyProgress >= threshold;
+                    return (
+                      <div key={i} className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs border ${isActive ? 'bg-sky-500 border-sky-400 text-white shadow-[0_0_15px_rgba(14,165,233,0.5)]' : 'bg-[#000a24] border-white/10 text-white/20'}`}>
+                        {icon}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
