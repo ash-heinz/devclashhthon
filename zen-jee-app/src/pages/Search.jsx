@@ -3,10 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math'; 
 import rehypeKatex from 'rehype-katex'; 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+import 'katex/dist/katex.min.css';
+import { aiService } from '../services/api.js'; // <-- Using your new backend service!
 
 // --- Amateur Doodle Icons ---
 const ThinnerStroke = "1";
@@ -36,9 +34,9 @@ const userGlass = getGlassStyle(56, 189, 248, 0.08, 0.2);
 
 // NCERT Direct Links Reference Map
 const NCERT_LINKS = {
-  physics: "[https://ncert.nic.in/textbook/pdf/keph1dd.zip](https://ncert.nic.in/textbook/pdf/keph1dd.zip)",
-  chemistry: "[https://ncert.nic.in/textbook/pdf/kech1dd.zip](https://ncert.nic.in/textbook/pdf/kech1dd.zip)",
-  mathematics: "[https://ncert.nic.in/textbook/pdf/kemh1dd.zip](https://ncert.nic.in/textbook/pdf/kemh1dd.zip)"
+  physics: "https://ncert.nic.in/textbook/pdf/keph1dd.zip",
+  chemistry: "https://ncert.nic.in/textbook/pdf/kech1dd.zip",
+  mathematics: "https://ncert.nic.in/textbook/pdf/kemh1dd.zip"
 };
 
 const ActionBoxes = ({ navigate, routeData }) => {
@@ -56,7 +54,7 @@ const ActionBoxes = ({ navigate, routeData }) => {
         <div className="text-xl mb-2 group-hover:scale-110 transition-transform origin-left">✍️</div>
         <h4 className="text-yellow-200 text-sm font-medium">Practice PYQs</h4>
       </div>
-      <a href={NCERT_LINKS[subject] || '[https://ncert.nic.in](https://ncert.nic.in)'} target="_blank" rel="noreferrer" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
+      <a href={NCERT_LINKS[subject] || 'https://ncert.nic.in'} target="_blank" rel="noreferrer" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
         <div className="text-xl mb-2 group-hover:scale-110 transition-transform origin-left">📚</div>
         <h4 className="text-emerald-200 text-sm font-medium">NCERT PDF</h4>
       </a>
@@ -106,33 +104,11 @@ export default function Search() {
 
   const fetchAIResponse = async (userText) => {
     setIsTyping(true);
-    
-    if (!genAI) {
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', showActions: false, text: "⚠️ API Key Missing." }]);
-      setIsTyping(false); return;
-    }
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-      const prompt = `
-        You are an expert, empathetic JEE tutor. 
-        A student asks: "${userText}"
-        
-        RULES:
-        1. Answer accurately and concisely. Use LaTeX ($math$ or $$math$$).
-        2. You MUST cross-reference your explanation with standard NCERT textbook theory. Mention if NCERT differs from advanced theory.
-        3. Keep it under 300 words.
-        
-        AT THE VERY END of your response, you MUST include a routing tag based on the closest matching subject/chapter from this syllabus map:
-        Physics: p_u1, p_u2, p_u11 | Chemistry: c_u1, c_u5, c_u16 | Math: m_u1, m_u8.
-
-        Format the tag EXACTLY like this (hidden from the user):
-        <ROUTE>{"subject": "physics", "chapter": "p_u2"}</ROUTE>
-      `;
-
-      const result = await model.generateContent(prompt);
-      let responseText = result.response.text();
+      // Connects to your Node.js backend instead of Gemini directly!
+      const data = await aiService.generateChatResponse(userText);
+      let responseText = data.response;
       let parsedRouteData = null;
 
       const routeMatch = responseText.match(/<ROUTE>(.*?)<\/ROUTE>/);
@@ -144,7 +120,8 @@ export default function Search() {
       setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', text: responseText, showActions: true, routeData: parsedRouteData }]);
 
     } catch (error) {
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', showActions: false, text: "⚠️ Error generating response." }]);
+      console.error(error);
+      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', showActions: false, text: "⚠️ Error connecting to backend server. Make sure your server is running!" }]);
     } finally {
       setIsTyping(false);
     }

@@ -1,135 +1,173 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth.js';
 
 const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
   background: `rgba(${r}, ${g}, ${b}, ${alphaBg})`,
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
+  backdropFilter: 'blur(16px)',
   border: `1px solid rgba(${r}, ${g}, ${b}, ${alphaBorder})`,
 });
 
 export default function Login() {
   const navigate = useNavigate();
-  const [isRegister, setIsRegister] = useState(false);
-  const [studentData, setStudentData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    studentClass: 'class12'
-  });
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleInput = (e) => {
-    setStudentData({ ...studentData, [e.target.name]: e.target.value });
-  };
+  // Form State
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [userClass, setUserClass] = useState('class12');
+  const [targetExam, setTargetExam] = useState('mains');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // 1. Determine the name to display
-    let displayName = studentData.name;
-    
-    // If they are just logging in, grab the part before the '@' in their email
-    if (!isRegister && studentData.email) {
-      const emailName = studentData.email.split('@')[0];
-      // Capitalize the first letter
-      displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  useEffect(() => {
+    if (authService.getCurrentUser()) {
+      navigate('/');
     }
+  }, [navigate]);
 
-    // 2. Persist class and name to localStorage to keep the app dynamic
-    localStorage.setItem('zenjee-class', studentData.studentClass);
-    localStorage.setItem('zenjee-name', displayName || 'Student');
-    
-    // 3. Navigate to dashboard
-    navigate('/');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await authService.login(email, password);
+      } else {
+        if (!name.trim()) throw new Error("Name is required.");
+        if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+        await authService.register(name, email, password, userClass, targetExam);
+      }
+      navigate('/');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const inputStyle = "w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-sky-400/50 transition-all placeholder-white/20 text-white mb-4";
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased relative overflow-hidden">
+    <div className="min-h-screen w-full flex bg-[#050810] text-gray-100 font-sans selection:bg-indigo-500/30">
       
-      {/* Background Decorative Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-500/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
-
-      <div 
-        style={getGlassStyle(255, 255, 255, 0.04, 0.1)} 
-        className="w-full max-w-md p-10 rounded-[2.5rem] shadow-2xl relative z-10 mx-4"
-      >
-        {/* Logo Section */}
-        <div className="text-center mb-10">
-          <div className="text-4xl font-semibold tracking-wider text-white mb-2">
-            Zen<span className="text-sky-300 font-extralight">JEE</span>
-          </div>
-          <p className="text-white/40 text-sm tracking-wide">Enter your flow state.</p>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {isRegister && (
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              className={inputStyle}
-              onChange={handleInput}
-              required
-            />
-          )}
+      {/* LEFT SIDE: Branding / Graphics */}
+      <div className="hidden lg:flex w-1/2 relative flex-col justify-center items-center p-12 overflow-hidden bg-gradient-to-br from-[#000a24] to-[#050810] border-r border-white/5">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none" />
+        
+        <div className="relative z-10 w-full max-w-md">
+          <h1 className="text-5xl font-bold tracking-wider text-white mb-6">
+            Zen<span className="text-sky-400 font-extralight">JEE</span>
+          </h1>
+          <p className="text-lg text-white/60 leading-relaxed mb-10">
+            Your autonomous AI tutor. Master the syllabus, target your weaknesses, and conquer the JEE with data-driven precision.
+          </p>
           
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            className={inputStyle}
-            onChange={handleInput}
-            required
-          />
-          
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            className={inputStyle}
-            onChange={handleInput}
-            required
-          />
-
-          {/* Class Selection */}
-          <div className="flex flex-col gap-2 mb-8">
-            <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold ml-2">Select Your Batch</span>
-            <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 shadow-inner">
-              {['class11', 'class12', 'dropper'].map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setStudentData({...studentData, studentClass: c})}
-                  className={`flex-1 py-2.5 rounded-xl text-[11px] font-bold transition-all uppercase ${
-                    studentData.studentClass === c 
-                    ? 'bg-sky-500/30 text-sky-200 border border-sky-500/30 shadow-lg' 
-                    : 'text-white/30 hover:text-white/50'
-                  }`}
-                >
-                  {c.replace('class', 'Class ')}
-                </button>
-              ))}
+          <div className="flex flex-col gap-4">
+            <div style={getGlassStyle(255,255,255, 0.02, 0.05)} className="p-4 rounded-2xl flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">⚡</div>
+              <div>
+                <div className="font-bold text-white/90">Autonomous Planner</div>
+                <div className="text-xs text-white/50">AI-driven daily study schedules</div>
+              </div>
+            </div>
+            <div style={getGlassStyle(255,255,255, 0.02, 0.05)} className="p-4 rounded-2xl flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400">🧠</div>
+              <div>
+                <div className="font-bold text-white/90">Spaced Repetition</div>
+                <div className="text-xs text-white/50">Never forget a concept again</div>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <button 
-            type="submit"
-            className="w-full py-4 rounded-2xl bg-sky-500 text-black font-bold tracking-wider hover:bg-sky-400 transition-all shadow-[0_0_20px_rgba(56,189,248,0.2)]"
-          >
-            {isRegister ? 'CREATE ACCOUNT' : 'SIGN IN'}
-          </button>
-        </form>
+      {/* RIGHT SIDE: Auth Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-2xl bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="mt-8 text-center">
-          <button 
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-white/40 text-sm hover:text-sky-300 transition-colors"
-          >
-            {isRegister ? 'Already have an account? Login' : 'New to ZenJEE? Create account'}
-          </button>
+        <div style={getGlassStyle(255,255,255, 0.03, 0.08)} className="w-full max-w-md p-10 rounded-3xl shadow-2xl relative z-10 backdrop-blur-xl">
+          
+          <div className="lg:hidden text-3xl font-bold tracking-wider text-center text-white mb-8">
+            Zen<span className="text-sky-400 font-extralight">JEE</span>
+          </div>
+
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {isLogin ? 'Welcome back' : 'Create your account'}
+          </h2>
+          <p className="text-sm text-white/50 mb-8">
+            {isLogin ? 'Enter your details to access your study space.' : 'Start your journey to IIT today.'}
+          </p>
+
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {!isLogin && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Full Name</label>
+                  <input 
+                    type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Rahul Kumar" 
+                    className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Class</label>
+                    <select value={userClass} onChange={(e) => setUserClass(e.target.value)} className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors appearance-none cursor-pointer">
+                      <option value="class11">Class 11</option>
+                      <option value="class12">Class 12</option>
+                      <option value="dropper">Dropper</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Target Exam</label>
+                    <select value={targetExam} onChange={(e) => setTargetExam(e.target.value)} className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors appearance-none cursor-pointer">
+                      <option value="mains">JEE Main</option>
+                      <option value="advanced">JEE Advanced</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Email Address</label>
+              <input 
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="student@jee.com" 
+                className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center pr-1">
+                <label className="text-xs font-bold text-white/50 uppercase tracking-wider pl-1">Password</label>
+              </div>
+              <input 
+                type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" 
+                className="bg-[#0b1121] border border-white/10 focus:border-indigo-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-colors"
+              />
+            </div>
+
+            <button 
+              type="submit" disabled={loading}
+              className="mt-4 w-full py-3.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(99,102,241,0.2)] disabled:opacity-50 flex justify-center items-center h-[52px]"
+            >
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : isLogin ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center text-sm text-white/50">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">
+              {isLogin ? 'Sign up' : 'Log in'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

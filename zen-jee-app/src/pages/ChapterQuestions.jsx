@@ -2,16 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { aiService } from '../services/api.js';
 
 // --- MATH RENDERER IMPORTS ---
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // --- Helper Component to Render Math Inline safely ---
 const MathText = ({ children }) => (
@@ -64,7 +61,9 @@ export const ChapterQuestions = () => {
   const displayTitle = location.state?.chapterName || chapterDetails?.name || `Chapter ${chapterId}`;
   
   const [allQuestions, setAllQuestions] = useState([]);
-  const [examType, setExamType] = useState('Mains');
+  const [examType, setExamType] = useState(() => {
+    return localStorage.getItem('zenjee-exam') === 'advanced' ? 'Advanced' : 'Mains';
+  });
 
   const storageKey = `zenjee-answers-${chapterId}`;
   const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem(storageKey + '-ans') || '{}'));
@@ -161,14 +160,13 @@ export const ChapterQuestions = () => {
   };
 
   const generateHint = async (questionText) => {
-    if (!genAI) { setHintText("API Key missing."); return; }
     setIsGeneratingHint(true);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `Provide ONE short, strategic hint to help start this problem. DO NOT give the answer. Use LaTeX math formatting. Under 3 sentences: "${questionText}"`;
-      const result = await model.generateContent(prompt);
-      setHintText(result.response.text());
-    } catch (error) { setHintText("Failed to generate hint."); }
+      const data = await aiService.generateHint(questionText);
+      setHintText(data.hint);
+    } catch (error) { 
+      setHintText("Failed to connect to backend for hint."); 
+    }
     setIsGeneratingHint(false);
   };
 

@@ -2,16 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { aiService } from '../services/api.js';
 
 // --- MATH RENDERER IMPORTS ---
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // --- Helper Component to Render Math Inline safely ---
 const MathText = ({ children }) => (
@@ -91,18 +88,15 @@ export default function DailyTest() {
     });
 
     let aiGeneratedQs = [];
-    if (weakTopicsList.length > 0 && genAI) {
+    if (weakTopicsList.length > 0) {
       try {
         const targetTopic = weakTopicsList[Math.floor(Math.random() * weakTopicsList.length)];
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `You are a JEE Tutor. Generate ONE multiple-choice question for the topic: "${targetTopic.topicName}". Make it conceptually challenging to test a student's weakness. Use LaTeX ($math$ or $$math$$) for equations. Return ONLY a valid JSON object. No markdown. Structure: {"text": "question", "options": ["A", "B", "C", "D"], "correctIndex": 0, "explanation": "detailed explanation", "difficulty": "Hard", "year": "AI Gen"}`;
-        
-        const result = await model.generateContent(prompt);
-        let rawJson = result.response.text().trim();
-        if (rawJson.startsWith('```json')) rawJson = rawJson.slice(7, -3);
-        const parsedQ = JSON.parse(rawJson);
+        // NEW BACKEND CALL
+        const parsedQ = await aiService.generateWeaknessQuestion(targetTopic.topicName);
         aiGeneratedQs.push({ ...parsedQ, id: 'ai_gen_' + Date.now(), subjectId: targetTopic.subjectId, chapterId: targetTopic.chapterId, isAIGenerated: true });
-      } catch (error) { console.error("AI Generation failed:", error); }
+      } catch (error) { 
+        console.error("Backend AI Generation failed:", error); 
+      }
     }
 
     dueQs = dueQs.sort(() => 0.5 - Math.random());
@@ -115,13 +109,14 @@ export default function DailyTest() {
   };
 
   const generateHint = async (questionText) => {
-    if (!genAI) return;
     setIsGeneratingHint(true);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(`Provide ONE short, strategic hint to help start this problem. DO NOT give the answer. Use LaTeX math formatting. Under 3 sentences: "${questionText}"`);
-      setHintText(result.response.text());
-    } catch (error) { setHintText("Failed to generate hint."); }
+      // NEW BACKEND CALL
+      const data = await aiService.generateHint(questionText);
+      setHintText(data.hint);
+    } catch (error) { 
+      setHintText("Failed to connect to backend for hint."); 
+    }
     setIsGeneratingHint(false);
   };
 

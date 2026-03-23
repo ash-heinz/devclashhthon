@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { allChaptersData } from '../data/chaptersData.js';
 import { getQuestionsForChapter } from '../data/questionsData.js';
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+import { aiService } from '../services/api.js'; // <-- Using your backend service!
 
 const BackArrow = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>;
 const SparkleIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5 text-indigo-400"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z" /></svg>;
@@ -59,6 +56,7 @@ export default function Planner() {
 
   const checkAndGeneratePlan = async (forceRefresh = false) => {
     setLoading(true);
+    setError(null);
     const userStats = analyzeUserProgress();
     const currentSignature = userStats.weakTopics.join('|');
     
@@ -72,14 +70,11 @@ export default function Planner() {
       return;
     }
 
-    if (!genAI) {
-      setError("Gemini API key is missing.");
-      setLoading(false); return;
-    }
-
     try {
       const targetExam = localStorage.getItem('zenjee-exam') || 'mains';
+      const selectedClass = localStorage.getItem('zenjee-class') || 'class12';
       const examDateStr = localStorage.getItem('zenjee-exam-date') || '2026-01-24';
+      const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const examDate = new Date(examDateStr);
       let daysLeft = Math.floor((examDate - new Date()) / (1000 * 60 * 60 * 24));
       if (daysLeft < 0) daysLeft = 300; 
@@ -89,27 +84,16 @@ export default function Planner() {
         ? `YOU MUST PRIORITIZE THESE WEAK AREAS on Day 1 and Day 2: ${userStats.weakTopics.join(', ')}` 
         : `Student is performing well. Focus on advancing syllabus.`;
 
-      const prompt = `
-        You are an autonomous, highly intelligent JEE study planner. 
-        Days left until target exam: ${daysLeft}. Target Exam: JEE ${targetExam.toUpperCase()}.
-        
-        User's Live Analytics:
-        - Syllabus Coverage: ~${coveragePct}% complete.
-        - ${weakAreasContext}
-        
-        Generate a highly optimized daily study plan for the next 4 days. Prioritize weak topics heavily.
-        You MUST respond ONLY with a valid, raw JSON array of objects. No markdown.
-        Format EXACTLY like this: [{"day": "Day 1", "date": "Tomorrow", "subject": "Physics", "focus": "Chapter Name", "task": "Solve 20 PYQs to fix weak area.", "color": "sky"}]
-      `;
-
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(prompt);
-      let textResponse = result.response.text().replace(/```json/gi, '').replace(/```/gi, '').trim();
-      const startIdx = textResponse.indexOf('[');
-      const endIdx = textResponse.lastIndexOf(']');
-      if(startIdx !== -1 && endIdx !== -1) textResponse = textResponse.substring(startIdx, endIdx + 1);
+      // CALLING YOUR NODE.JS BACKEND
+      const parsedPlan = await aiService.generatePlan({
+        daysLeft,
+        targetExam,
+        coveragePct,
+        weakAreasContext,
+        selectedClass,
+        currentDate
+      });
       
-      const parsedPlan = JSON.parse(textResponse);
       setPlan(parsedPlan);
       
       // Save Cache
@@ -117,7 +101,8 @@ export default function Planner() {
       localStorage.setItem('zenjee-planner-sig', currentSignature);
 
     } catch (err) {
-      setError("The autonomous agent failed to generate a plan.");
+      console.error(err);
+      setError("The autonomous agent failed to connect to the backend server. Is your Node.js server running?");
     } finally {
       setLoading(false);
     }
@@ -148,7 +133,7 @@ export default function Planner() {
         {loading && (
           <div className={`${cardStyle} flex flex-col items-center justify-center py-20 gap-4`}>
             <div className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-            <p className="text-white/60 animate-pulse text-sm">Analyzing syllabus coverage, targeting weak areas, and optimizing schedule...</p>
+            <p className="text-white/60 animate-pulse text-sm">Analyzing syllabus coverage, targeting weak areas, and optimizing schedule via Secure Backend...</p>
           </div>
         )}
 
