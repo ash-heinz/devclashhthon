@@ -21,13 +21,6 @@ const SendIcon = () => (
   </svg>
 );
 
-const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
 const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
   background: `rgba(${r}, ${g}, ${b}, ${alphaBg})`,
   backdropFilter: 'blur(16px)',
@@ -38,17 +31,15 @@ const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
 const defaultGlass = getGlassStyle(255, 255, 255, 0.04, 0.1);
 const aiGlass = getGlassStyle(99, 102, 241, 0.05, 0.15); 
 const userGlass = getGlassStyle(56, 189, 248, 0.08, 0.2); 
-const modalGlass = getGlassStyle(15, 23, 42, 0.9, 0.2); // Added Modal Glass
 
-// CHANGED: These must be .pdf links, not .zip links, so the iframe can render them!
+// Direct PDF Links
 const NCERT_LINKS = {
-  physics: "https://www.ncert.nic.in/textbook/pdf/keph101.pdf",
-  chemistry: "https://www.ncert.nic.in/textbook/pdf/kech101.pdf",
-  mathematics: "https://www.ncert.nic.in/textbook/pdf/kemh101.pdf"
+  physics: "https://ncert.nic.in/textbook/pdf/keph101.pdf",
+  chemistry: "https://ncert.nic.in/textbook/pdf/kech101.pdf",
+  mathematics: "https://ncert.nic.in/textbook/pdf/kemh101.pdf"
 };
 
-// Added openModal prop to trigger the iframe popup
-const ActionBoxes = ({ navigate, routeData, openModal }) => {
+const ActionBoxes = ({ navigate, routeData }) => {
   const subject = routeData?.subject || 'physics';
   const chapter = routeData?.chapter || 'p_u2'; 
   const targetUrl = `/subject/${subject}/chapter/${chapter}`;
@@ -64,11 +55,11 @@ const ActionBoxes = ({ navigate, routeData, openModal }) => {
         <h4 className="text-yellow-200 text-sm font-medium">Practice PYQs</h4>
       </div>
       
-      {/* CHANGED: This is now a clickable div that opens the Modal instead of a new tab */}
-      <div onClick={() => openModal(`NCERT ${subject.toUpperCase()} Chapter`, NCERT_LINKS[subject])} className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
+      {/* Restored to an <a> tag that safely opens in a new tab */}
+      <a href={NCERT_LINKS[subject] || 'https://ncert.nic.in'} target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
         <div className="text-xl mb-2 group-hover:scale-110 transition-transform origin-left">📚</div>
-        <h4 className="text-emerald-200 text-sm font-medium">NCERT PDF</h4>
-      </div>
+        <h4 className="text-emerald-200 text-sm font-medium">NCERT PDF ↗</h4>
+      </a>
     </div>
   );
 };
@@ -82,9 +73,6 @@ export default function Search() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const hasProcessedInitialQuery = useRef(false);
-  
-  // Added Modal State
-  const [activeModal, setActiveModal] = useState(null);
 
   const [messages, setMessages] = useState([
     {
@@ -146,10 +134,6 @@ export default function Search() {
     }
   };
 
-  // Modal Handlers
-  const openModal = (title, url) => setActiveModal({ title, url });
-  const closeModal = () => setActiveModal(null);
-
   return (
     <div className="h-screen w-full overflow-hidden flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased relative">
       <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-40 relative">
@@ -174,8 +158,7 @@ export default function Search() {
                 {msg.role === 'ai' ? <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.text}</ReactMarkdown> : msg.text}
               </div>
               
-              {/* Passed openModal down to ActionBoxes */}
-              {msg.showActions && <ActionBoxes navigate={navigate} routeData={msg.routeData} openModal={openModal} />}
+              {msg.showActions && <ActionBoxes navigate={navigate} routeData={msg.routeData} />}
             </div>
           </div>
         ))}
@@ -201,28 +184,6 @@ export default function Search() {
           </button>
         </form>
       </div>
-
-      {/* PDF MODAL OVERLAY */}
-      {activeModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div style={modalGlass} className="w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-white/10 shrink-0 bg-black/40">
-              <h2 className="text-xl font-medium text-white">{activeModal.title}</h2>
-              <button onClick={closeModal} className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-                <CloseIcon />
-              </button>
-            </div>
-            
-            <div className="flex-1 w-full h-full bg-black/50">
-              <iframe 
-              src={`https://docs.google.com/gview?url=${activeModal.url}&embedded=true`} 
-              className="w-full h-full border-none bg-white" 
-              title="PDF Viewer" 
-            />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
