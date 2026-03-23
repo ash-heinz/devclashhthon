@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { allChaptersData, mockTopic } from '../data/chaptersData.js';
-import { getQuestionsForChapter } from '../data/questionsData.js'; // <-- NEW: Import the questions database
+import { getQuestionsForChapter } from '../data/questionsData.js';
 
 // --- Amateur Doodle Icons ---
 const ThinnerStroke = "1";
@@ -64,6 +64,8 @@ export const Chapter = () => {
   });
 
   const [activeModal, setActiveModal] = useState(null);
+  
+  // Sync Advanced Toggle with the user's global profile preference
   const [showAdvanced, setShowAdvanced] = useState(() => {
     const globalExam = localStorage.getItem('zenjee-exam');
     if (globalExam === 'advanced') return true;
@@ -89,7 +91,7 @@ export const Chapter = () => {
 
   const displayTitle = allChaptersData[subjectId]?.[chapterId]?.name || passedChapterName || `Chapter ${chapterId}`;
 
-  // --- FETCH CHAPTER QUESTIONS TO CALCULATE DYNAMIC COUNTS ---
+  // FETCH CHAPTER QUESTIONS TO CALCULATE DYNAMIC COUNTS
   const chapterQs = getQuestionsForChapter(subjectId, chapterId, displayTitle);
 
   const toggleTopic = (topicId) => {
@@ -101,6 +103,7 @@ export const Chapter = () => {
     });
   };
 
+  // The single handler to open PDFs, Text, or Videos
   const openModal = (title, type, content) => setActiveModal({ title, type, content });
   const closeModal = () => setActiveModal(null);
 
@@ -156,11 +159,11 @@ export const Chapter = () => {
               ? `https://img.youtube.com/vi/${topic.videoId}/hqdefault.jpg` 
               : topic.thumbnail;
 
-            // --- DYNAMICALLY CALCULATE NUMBER OF QUESTIONS FOR THIS SPECIFIC LECTURE ---
             const topicQsCount = chapterQs.filter(q => q.topic === topic.id).length;
 
             return (
               <div key={topic.id} style={topicGlass} className={`grid grid-cols-[auto_1.5fr_1.5fr_1.5fr_1fr] gap-6 p-4 rounded-2xl items-center transition-all duration-300 hover:bg-white/5 animate-fade-in-up ${isDone ? 'opacity-50' : ''}`}>
+                
                 <div className="flex items-center justify-center">
                   <button onClick={() => toggleTopic(topic.id)} className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500/20 border-emerald-500/50' : 'border-white/20 hover:border-white/40 bg-black/20'}`}>
                     {isDone && <CheckIcon />}
@@ -169,14 +172,18 @@ export const Chapter = () => {
 
                 <YouTubeTopicName videoId={topic.videoId} fallbackName={topic.name} isAdvanced={topic.isAdvanced} />
 
-                <a href={`https://www.youtube.com/watch?v=${topic.videoId}`} target="_blank" rel="noreferrer" className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full">
+                {/* UPDATED: Video Thumbnail now opens the Video Modal */}
+                <div 
+                  onClick={() => openModal(`${topic.name} - Lecture`, 'video', topic.videoId)} 
+                  className="relative rounded-xl overflow-hidden group border border-white/10 block h-20 bg-black/50 w-full cursor-pointer"
+                >
                   <img src={thumbnailUrl} alt={topic.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform border border-white/10">
                       <PlayIcon />
                     </div>
                   </div>
-                </a>
+                </div>
 
                 <div onClick={() => openModal(`${topic.name} - Official Notes`, 'pdf', topic.pdfUrl)} className="rounded-xl border border-white/10 bg-black/20 p-3 cursor-pointer hover:border-indigo-400/30 hover:bg-indigo-500/5 transition-all group overflow-hidden h-20 flex flex-col justify-center w-full">
                   <p className="text-xs text-white/60 line-clamp-2 group-hover:text-white/80 transition-colors">
@@ -186,10 +193,7 @@ export const Chapter = () => {
                 </div>
 
                 <div className="flex flex-col justify-center">
-                  {/* --- DYNAMIC NUMBER RENDERED HERE --- */}
                   <div className="text-xs text-white/80 mb-2 font-medium">{topicQsCount} PYQs</div>
-                  
-                  {/* --- DYNAMIC URL ROUTING --- */}
                   <button 
                     onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}?tab=topic&topicId=${topic.id}`, { state: { chapterName: displayTitle } })}
                     className="px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 transition-colors border border-indigo-500/20 text-center w-full"
@@ -216,6 +220,7 @@ export const Chapter = () => {
         </div>
       </main>
 
+      {/* MODAL OVERLAY */}
       {activeModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-fade-in">
           <div style={modalGlass} className="w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
@@ -225,15 +230,26 @@ export const Chapter = () => {
                 <CloseIcon />
               </button>
             </div>
-            <div className="flex-1 w-full h-full bg-white/5">
+            
+            <div className="flex-1 w-full h-full bg-[#000a24]">
               {activeModal.type === 'pdf' ? (
                 <iframe src={activeModal.content} className="w-full h-full" title="PDF Viewer" />
+              ) : activeModal.type === 'video' ? (
+                // YouTube Embed Iframe
+                <iframe 
+                  src={`https://www.youtube.com/embed/${activeModal.content}?autoplay=1`} 
+                  className="w-full h-full border-none" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen 
+                  title="Video Player" 
+                />
               ) : (
                 <div className="p-8 overflow-y-auto custom-scrollbar text-white/80 leading-relaxed whitespace-pre-wrap text-lg h-full">
                   {activeModal.content}
                 </div>
               )}
             </div>
+            
           </div>
         </div>
       )}
