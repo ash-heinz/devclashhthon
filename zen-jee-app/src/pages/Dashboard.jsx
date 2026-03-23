@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NtaNotifications from './NtaNotifications';
+import { authService } from '../services/auth.js'; // <-- IMPORT AUTH SERVICE
 
 // --- Motivational Quotes Array ---
 const zenQuotes = [
@@ -88,16 +89,9 @@ const getLocalDateStr = (d) => {
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // --- AUTH CHECK ---
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('zenjee-name');
-    if (!isLoggedIn) {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  // Read User Data dynamically
-  const [userName, setUserName] = useState(() => localStorage.getItem('zenjee-name') || 'Student');
+  // --- GET CURRENT USER FROM AUTH SERVICE ---
+  const user = authService.getCurrentUser();
+  const [userName, setUserName] = useState(user?.name || 'Student');
 
   const [chatInput, setChatInput] = useState('');
   
@@ -192,8 +186,9 @@ export default function Dashboard() {
     return selectedClass === 'class11' ? 'Class 11' : 'Class 12';
   };
 
+  // --- UPDATED LOGOUT TO USE AUTH SERVICE ---
   const handleLogout = () => {
-    localStorage.removeItem('zenjee-name');
+    authService.logout();
     navigate('/login');
   };
 
@@ -225,7 +220,7 @@ export default function Dashboard() {
               <span className="relative z-10 font-medium tracking-wide">My Study Space</span>
             </button>
 
-            {/* NEW DAILY TEST BUTTON */}
+            {/* DAILY TEST BUTTON */}
             <button 
               onClick={() => navigate('/daily-test')} 
               className="group relative px-5 py-2 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 transition-all duration-300 border border-emerald-500/30 text-sm tracking-wide text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.15)] overflow-hidden flex items-center gap-2"
@@ -243,17 +238,14 @@ export default function Dashboard() {
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-6 relative">
           
-          {/* NTA NOTIFICATIONS ADDED HERE */}
           <NtaNotifications />
 
-          {/* DYNAMIC STREAK BADGE */}
           <span className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-orange-200 px-4 py-1.5 rounded-full border border-orange-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(249,115,22,0.2)]">
             <span className="text-lg">🔥</span> 
             <span className="font-bold">{currentStreak}</span> 
             <span className="text-xs uppercase tracking-widest opacity-80">{currentStreak === 1 ? 'Day' : 'Days'}</span>
           </span>
 
-          {/* PROFILE TOGGLE BUTTON */}
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className={`flex items-center gap-3 p-1.5 pr-4 rounded-full border transition-all duration-300 ${isProfileOpen ? 'bg-white/10 border-white/20 shadow-lg' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}`}
@@ -270,7 +262,6 @@ export default function Dashboard() {
             </svg>
           </button>
 
-          {/* HIDDEN DROPDOWN */}
           {isProfileOpen && (
             <div 
               style={{...defaultGlass, background: 'rgba(0, 10, 36, 0.95)'}} 
@@ -280,7 +271,7 @@ export default function Dashboard() {
                 <div className="border-b border-white/10 pb-4 flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-medium text-white tracking-wide">{userName}</h3>
-                    <p className="text-xs text-white/40 mt-1">Student Account</p>
+                    <p className="text-xs text-white/40 mt-1">{user?.email || 'Student Account'}</p>
                   </div>
                   <div className="flex gap-2">
                     <button 
@@ -304,11 +295,6 @@ export default function Dashboard() {
                       </svg>
                     </button>
                   </div>
-                  <button onClick={() => navigate('/profile')} className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group">
-                    <svg className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -329,7 +315,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* --- DAILY GOAL TRACKER --- */}
                 <div className="pt-4 border-t border-white/10">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold">Daily Goal (Questions)</span>
@@ -357,7 +342,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* --- LIVE STREAK CALENDAR --- */}
                 <div className="pt-4 border-t border-white/10">
                   <h4 className="text-[11px] font-bold text-white/60 uppercase tracking-widest mb-4 text-center">
                     {todayObj.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -368,10 +352,7 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
-                    {/* Empty Slots */}
                     {[...Array(firstDayOfMonth)].map((_, i) => <div key={`empty-${i}`} className="py-2"></div>)}
-                    
-                    {/* Actual Month Days */}
                     {[...Array(daysInMonth)].map((_, i) => {
                       const day = i + 1;
                       const isToday = day === todayDateNum;
@@ -379,7 +360,6 @@ export default function Dashboard() {
                       const hasFire = streakDates.includes(dateStr);
                       
                       let styles = "py-1.5 rounded-md relative flex items-center justify-center transition-all ";
-                      
                       if (isToday && !hasFire) styles += "bg-sky-500/30 text-sky-200 font-bold border border-sky-500/50 shadow-[0_0_10px_rgba(14,165,233,0.3)]";
                       else if (isToday && hasFire) styles += "bg-orange-500/20 border border-orange-500/30 shadow-[0_0_10px_rgba(249,115,22,0.2)]";
                       else styles += "text-white/50 bg-white/5";
@@ -387,9 +367,7 @@ export default function Dashboard() {
                       return (
                         <div key={day} className={styles} title={hasFire ? "Goal Met!" : ""}>
                           <span className={`transition-opacity ${hasFire ? 'opacity-20' : 'opacity-100'}`}>{day}</span>
-                          {hasFire && (
-                            <span className="absolute inset-0 flex items-center justify-center text-orange-400 text-sm filter drop-shadow-[0_0_5px_rgba(249,115,22,0.8)] z-10 animate-fade-in-up">🔥</span>
-                          )}
+                          {hasFire && <span className="absolute inset-0 flex items-center justify-center text-orange-400 text-sm filter drop-shadow-[0_0_5px_rgba(249,115,22,0.8)] z-10 animate-fade-in-up">🔥</span>}
                         </div>
                       );
                     })}
@@ -402,14 +380,10 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {isProfileOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)}></div>
-      )}
+      {isProfileOpen && <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)}></div>}
 
       {/* 2. MAIN DASHBOARD AREA */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 flex flex-col justify-center gap-10 relative z-10 pb-12">
-        
-        {/* DYNAMIC QUOTE */}
         <div className="text-center animate-fade-in-up">
           <h1 className="text-3xl md:text-4xl font-light text-sky-50 mb-3 tracking-wide transition-opacity duration-500 ease-in-out">
             {currentQuote}
@@ -417,7 +391,6 @@ export default function Dashboard() {
           <p className="text-sky-200/50 text-base font-medium">What are we mastering today?</p>
         </div>
 
-        {/* SEARCH BAR */}
         <div className="w-full max-w-3xl mx-auto relative group">
           <input
             type="text"
@@ -433,7 +406,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* SUBJECT CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           <div style={physicsGlass} onClick={() => navigate('/subject/physics')} className={`rounded-[2rem] p-8 flex flex-col items-center justify-center cursor-pointer shadow-lg ${glassHover} hover:border-sky-500/50`}>
             <div className="absolute top-5 right-5 text-[10px] uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full text-sky-200 border border-white/5">{getDisplayClass()}</div>
@@ -454,18 +426,15 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* PRACTICE RESOURCES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full shrink-0">
           <div onClick={() => navigate('/previous-questions')} style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <PyqDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Previous Questions</h3>
           </div>
-          
           <div onClick={() => navigate('/previous-papers')} style={defaultGlass} className={`rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <PypDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Previous Papers</h3>
           </div>
-          
           <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <AiDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Custom AI Paper</h3>
