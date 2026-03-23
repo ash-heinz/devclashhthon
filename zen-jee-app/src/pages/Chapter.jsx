@@ -185,11 +185,21 @@ export const Chapter = () => {
                   </div>
                 </div>
 
-                <div onClick={() => openModal(`${topic.name} - Official Notes`, 'pdf', topic.pdfUrl)} className="rounded-xl border border-white/10 bg-black/20 p-3 cursor-pointer hover:border-indigo-400/30 hover:bg-indigo-500/5 transition-all group overflow-hidden h-20 flex flex-col justify-center w-full">
+                {/* ELABORATE LECTURE NOTES MODAL */}
+                <div 
+                  onClick={() => openModal(
+                    `${topic.name} - Detailed Notes`, 
+                    topic.lectureNotesContent ? 'text' : 'pdf', 
+                    topic.lectureNotesContent || topic.pdfUrl
+                  )} 
+                  className="rounded-xl border border-white/10 bg-black/20 p-3 cursor-pointer hover:border-indigo-400/30 hover:bg-indigo-500/5 transition-all group overflow-hidden h-20 flex flex-col justify-center w-full"
+                >
                   <p className="text-xs text-white/60 line-clamp-2 group-hover:text-white/80 transition-colors">
                     {topic.notesText}
                   </p>
-                  <div className="text-[10px] text-indigo-300/70 mt-1 font-medium uppercase tracking-wider">Open PDF ↗</div>
+                  <div className="text-[10px] text-indigo-300/70 mt-1 font-medium uppercase tracking-wider">
+                    {topic.lectureNotesContent ? 'Read Notes ↗' : 'Open PDF ↗'}
+                  </div>
                 </div>
 
                 <div className="flex flex-col justify-center">
@@ -207,12 +217,22 @@ export const Chapter = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-6 shrink-0">
-          <div onClick={() => openModal(`${displayTitle} Short Notes`, 'pdf', chapterDetails.shortNotesPdf || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')} style={topicGlass} className={`rounded-2xl p-6 cursor-pointer hover:border-${subjectData.colorHex}-400/30 hover:bg-white/5 transition-all group`}>
+          {/* ORIGINAL SHORT NOTES BEHAVIOR KEPT INTACT (PDF) */}
+          <div 
+            onClick={() => openModal(
+              `${displayTitle} Short Notes Review`, 
+              'pdf', 
+              chapterDetails.shortNotesPdf || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            )} 
+            style={topicGlass} 
+            className={`rounded-2xl p-6 cursor-pointer hover:border-${subjectData.colorHex}-400/30 hover:bg-white/5 transition-all group`}
+          >
             <h3 className={`text-lg font-medium ${subjectData.colorText} mb-2 flex items-center gap-2`}>
               📄 Short Notes Review
             </h3>
             <p className="text-sm text-white/50 line-clamp-2">{chapterDetails.shortNotes}</p>
           </div>
+          
           <div onClick={() => navigate(`/previous-questions/${subjectId}/chapter/${chapterId}`, { state: { chapterName: displayTitle } })} style={topicGlass} className="rounded-2xl p-6 cursor-pointer hover:border-yellow-400/30 hover:bg-yellow-500/5 transition-all flex flex-col justify-center items-center group">
             <h3 className="text-xl font-medium text-yellow-100 mb-1">Chapter PYQs</h3>
             <p className="text-sm text-yellow-200/50 group-hover:text-yellow-200/80">Generate a custom test from past 5 years</p>
