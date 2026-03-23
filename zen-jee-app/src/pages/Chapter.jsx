@@ -65,6 +65,8 @@ export const Chapter = () => {
 
   const [activeModal, setActiveModal] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(() => {
+    const globalExam = localStorage.getItem('zenjee-exam');
+    if (globalExam === 'advanced') return true;
     return localStorage.getItem('zenjee-show-advanced') === 'true';
   });
 
