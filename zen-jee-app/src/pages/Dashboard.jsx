@@ -1,8 +1,7 @@
-// src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NtaNotifications from './NtaNotifications';
-import { authService } from '../services/auth.js'; // <-- IMPORT AUTH SERVICE
+import { authService } from '../services/auth.js'; 
 
 // --- Motivational Quotes Array ---
 const zenQuotes = [
@@ -89,6 +88,7 @@ export default function Dashboard() {
     const isLoggedIn = localStorage.getItem('zenjee-name');
     if (!isLoggedIn) { navigate('/login'); }
   }, [navigate]);
+
   // --- GET CURRENT USER FROM AUTH SERVICE ---
   const user = authService.getCurrentUser();
   const [userName, setUserName] = useState(user?.name || 'Student');
@@ -452,7 +452,9 @@ export default function Dashboard() {
             <PypDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Previous Papers</h3>
           </div>
-          <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
+          
+          {/* Custom AI Paper links to /custom-test-builder */}
+          <div onClick={() => navigate('/custom-test-builder')} style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <AiDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Custom AI Paper</h3>
           </div>

@@ -18,11 +18,14 @@ export default function TestEngine() {
   const { testId } = useParams();
   const navigate = useNavigate();
   
-  const isAdvanced = testId?.startsWith('a');
-  const durationMinutes = isAdvanced ? 360 : 180;
-  const totalDurationSeconds = durationMinutes * 60;
+  // --- ADDED STATE FOR DYNAMIC QUESTIONS ---
+  const [currentTestQuestions, setCurrentTestQuestions] = useState([]);
   
-  const currentTestQuestions = mockQuestions; 
+  const isAdvanced = testId?.startsWith('a');
+  
+  // Dynamic duration calculation based on test type
+  const durationMinutes = testId === 'custom' ? (currentTestQuestions.length * 2) : (isAdvanced ? 360 : 180);
+  const totalDurationSeconds = durationMinutes * 60;
   
   const [status, setStatus] = useState('instructions'); 
   const [timeLeft, setTimeLeft] = useState(0);
@@ -31,6 +34,21 @@ export default function TestEngine() {
 
   const [explanations, setExplanations] = useState({});
   const [loadingAi, setLoadingAi] = useState(null);
+
+  // --- ADDED EFFECT TO LOAD QUESTIONS ---
+  useEffect(() => {
+    if (testId === 'custom') {
+      const customData = JSON.parse(localStorage.getItem('zenjee-custom-test') || '[]');
+      if (customData.length === 0) {
+        alert("No custom test found. Redirecting to builder...");
+        navigate('/custom-test-builder');
+      } else {
+        setCurrentTestQuestions(customData);
+      }
+    } else {
+      setCurrentTestQuestions(mockQuestions);
+    }
+  }, [testId, navigate]);
 
   useEffect(() => {
     let timer;
@@ -108,6 +126,11 @@ export default function TestEngine() {
     return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  // Prevent rendering before questions are loaded
+  if (currentTestQuestions.length === 0 && status !== 'submitted') {
+    return <div className="min-h-screen bg-[#141720] flex items-center justify-center text-white">Loading...</div>;
+  }
+
   // ==========================================
   // VIEW 1: INSTRUCTIONS
   // ==========================================
@@ -117,9 +140,10 @@ export default function TestEngine() {
         <div className="max-w-4xl w-full bg-[#1C202B] p-10 rounded-3xl border border-white/10 shadow-2xl">
           <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-6">Instructions</h1>
           <div className="space-y-4 text-white/70 text-sm leading-relaxed mb-10">
-            <p>1. Total duration: {durationMinutes} minutes.</p>
-            <p>2. +4 Marks for Correct, -1 for Incorrect.</p>
-            <p>3. After submission, you will receive a detailed performance analysis and AI-powered review options.</p>
+            <p>1. Total questions: {currentTestQuestions.length}</p>
+            <p>2. Total duration: {durationMinutes} minutes.</p>
+            <p>3. +4 Marks for Correct, -1 for Incorrect.</p>
+            <p>4. After submission, you will receive a detailed performance analysis and AI-powered review options.</p>
             <p className="text-orange-300 font-medium">🔥 Bonus: Questions attempted here will automatically count towards your Daily Goal!</p>
           </div>
           <div className="flex justify-end border-t border-white/10 pt-6">
@@ -140,7 +164,9 @@ export default function TestEngine() {
     return (
       <div className="h-screen w-full flex flex-col bg-white text-slate-800 font-sans overflow-hidden">
         <header className="bg-[#1E3A8A] text-white px-6 py-3 flex justify-between items-center shadow-md z-10">
-          <div className="text-xl font-bold tracking-wider">JEE {isAdvanced ? 'ADVANCED' : 'MAIN'} MOCK</div>
+          <div className="text-xl font-bold tracking-wider">
+            {testId === 'custom' ? 'CUSTOM AI PAPER' : `JEE ${isAdvanced ? 'ADVANCED' : 'MAIN'} MOCK`}
+          </div>
           <div className="flex items-center gap-4 bg-black/30 px-5 py-2 rounded-lg font-mono text-lg">
             <span>⏱️ Time Left: {formatTime(timeLeft)}</span>
           </div>
@@ -255,8 +281,8 @@ export default function TestEngine() {
             <button onClick={() => setStatus('review')} className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-full transition-all shadow-[0_0_15px_rgba(99,102,241,0.4)]">
               Review Questions
             </button>
-            <button onClick={() => navigate('/previous-papers')} className="px-6 py-2 border border-white/10 hover:bg-white/5 text-white font-medium rounded-full transition-all">
-              Exit
+            <button onClick={() => navigate('/')} className="px-6 py-2 border border-white/10 hover:bg-white/5 text-white font-medium rounded-full transition-all">
+              Exit to Dashboard
             </button>
           </div>
         </div>

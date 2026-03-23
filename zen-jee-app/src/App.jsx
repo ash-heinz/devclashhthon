@@ -1,10 +1,10 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { authService } from './services/auth.js'; // <-- Import Auth Service
+import { authService } from './services/auth.js'; 
 
 // Pages
-import Login from './pages/Login.jsx'; // <-- Import Login
+import Login from './pages/Login.jsx'; 
 import Dashboard from './pages/Dashboard';
 import Search from './pages/Search';
 import Subject from './pages/Subject';
@@ -14,6 +14,9 @@ import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
 import { ChapterQuestions } from './pages/ChapterQuestions.jsx';
 import DailyTest from './pages/DailyTest.jsx';
+import CustomTestBuilder from './pages/CustomTestBuilder.jsx'; 
+import PreviousPapers from './pages/PreviousPapers.jsx';
+import TestEngine from './pages/TestEngine.jsx';
 
 // A simple wrapper to protect routes
 const ProtectedRoute = ({ children }) => {
@@ -43,6 +46,11 @@ export default function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
         <Route path="/daily-test" element={<ProtectedRoute><DailyTest /></ProtectedRoute>} />
+        
+        {/* New Test Engine Routes */}
+        <Route path="/previous-papers" element={<ProtectedRoute><PreviousPapers /></ProtectedRoute>} />
+        <Route path="/custom-test-builder" element={<ProtectedRoute><CustomTestBuilder /></ProtectedRoute>} /> 
+        <Route path="/test/:testId" element={<ProtectedRoute><TestEngine /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
