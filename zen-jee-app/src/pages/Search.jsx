@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math'; 
 import rehypeKatex from 'rehype-katex'; 
 import 'katex/dist/katex.min.css';
-import { aiService } from '../services/api.js'; // <-- Using your new backend service!
+import { aiService } from '../services/api.js'; 
 
 // --- Amateur Doodle Icons ---
 const ThinnerStroke = "1";
@@ -21,6 +21,13 @@ const SendIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
 const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
   background: `rgba(${r}, ${g}, ${b}, ${alphaBg})`,
   backdropFilter: 'blur(16px)',
@@ -31,15 +38,17 @@ const getGlassStyle = (r, g, b, alphaBg = 0.03, alphaBorder = 0.08) => ({
 const defaultGlass = getGlassStyle(255, 255, 255, 0.04, 0.1);
 const aiGlass = getGlassStyle(99, 102, 241, 0.05, 0.15); 
 const userGlass = getGlassStyle(56, 189, 248, 0.08, 0.2); 
+const modalGlass = getGlassStyle(15, 23, 42, 0.9, 0.2); // Added Modal Glass
 
-// NCERT Direct Links Reference Map
+// CHANGED: These must be .pdf links, not .zip links, so the iframe can render them!
 const NCERT_LINKS = {
-  physics: "https://ncert.nic.in/textbook/pdf/keph1dd.zip",
-  chemistry: "https://ncert.nic.in/textbook/pdf/kech1dd.zip",
-  mathematics: "https://ncert.nic.in/textbook/pdf/kemh1dd.zip"
+  physics: "https://www.ncert.nic.in/textbook/pdf/keph101.pdf",
+  chemistry: "https://www.ncert.nic.in/textbook/pdf/kech101.pdf",
+  mathematics: "https://www.ncert.nic.in/textbook/pdf/kemh101.pdf"
 };
 
-const ActionBoxes = ({ navigate, routeData }) => {
+// Added openModal prop to trigger the iframe popup
+const ActionBoxes = ({ navigate, routeData, openModal }) => {
   const subject = routeData?.subject || 'physics';
   const chapter = routeData?.chapter || 'p_u2'; 
   const targetUrl = `/subject/${subject}/chapter/${chapter}`;
@@ -54,10 +63,12 @@ const ActionBoxes = ({ navigate, routeData }) => {
         <div className="text-xl mb-2 group-hover:scale-110 transition-transform origin-left">✍️</div>
         <h4 className="text-yellow-200 text-sm font-medium">Practice PYQs</h4>
       </div>
-      <a href={NCERT_LINKS[subject] || 'https://ncert.nic.in'} target="_blank" rel="noreferrer" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
+      
+      {/* CHANGED: This is now a clickable div that opens the Modal instead of a new tab */}
+      <div onClick={() => openModal(`NCERT ${subject.toUpperCase()} Chapter`, NCERT_LINKS[subject])} className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors group block">
         <div className="text-xl mb-2 group-hover:scale-110 transition-transform origin-left">📚</div>
         <h4 className="text-emerald-200 text-sm font-medium">NCERT PDF</h4>
-      </a>
+      </div>
     </div>
   );
 };
@@ -71,6 +82,9 @@ export default function Search() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const hasProcessedInitialQuery = useRef(false);
+  
+  // Added Modal State
+  const [activeModal, setActiveModal] = useState(null);
 
   const [messages, setMessages] = useState([
     {
@@ -106,7 +120,6 @@ export default function Search() {
     setIsTyping(true);
 
     try {
-      // Connects to your Node.js backend instead of Gemini directly!
       const data = await aiService.generateChatResponse(userText);
       let responseText = data.response;
       let parsedRouteData = null;
@@ -121,15 +134,25 @@ export default function Search() {
 
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', showActions: false, text: "⚠️ Error connecting to backend server. Make sure your server is running!" }]);
+      const isRateLimit = error.message?.includes('429') || error.status === 429;
+      
+      const errorMessage = isRateLimit 
+        ? "⚠️ **Whoa, slow down!** I'm receiving too many requests right now. (Google's free AI tier limits us to 15 actions per minute). Please wait about 60 seconds and try asking again!"
+        : "⚠️ Error connecting to backend server. Make sure your Node.js server is running!";
+
+      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'ai', showActions: false, text: errorMessage }]);
     } finally {
       setIsTyping(false);
     }
   };
 
+  // Modal Handlers
+  const openModal = (title, url) => setActiveModal({ title, url });
+  const closeModal = () => setActiveModal(null);
+
   return (
-    <div className="h-screen w-full overflow-hidden flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased">
-      <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-50 relative">
+    <div className="h-screen w-full overflow-hidden flex flex-col bg-gradient-to-b from-[#000a24] to-black text-gray-100 font-sans antialiased relative">
+      <nav style={defaultGlass} className="flex items-center justify-between px-10 py-4 shrink-0 rounded-b-3xl mx-3 shadow-lg z-40 relative">
         <div className="text-2xl font-semibold tracking-wider text-white flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
           Zen<span className="text-sky-300 font-extralight">JEE</span>
         </div>
@@ -150,10 +173,13 @@ export default function Search() {
               <div className={msg.role === 'ai' ? 'text-indigo-50/90 prose prose-invert prose-p:leading-relaxed max-w-none' : ''}>
                 {msg.role === 'ai' ? <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.text}</ReactMarkdown> : msg.text}
               </div>
-              {msg.showActions && <ActionBoxes navigate={navigate} routeData={msg.routeData} />}
+              
+              {/* Passed openModal down to ActionBoxes */}
+              {msg.showActions && <ActionBoxes navigate={navigate} routeData={msg.routeData} openModal={openModal} />}
             </div>
           </div>
         ))}
+        
         {isTyping && (
           <div className="flex w-full justify-start animate-fade-in-up">
             <div className="mr-3 mt-1 shrink-0 p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 h-10 w-10 flex items-center justify-center"><SparkleDoodle /></div>
@@ -167,7 +193,7 @@ export default function Search() {
         <div ref={messagesEndRef} className="h-4" />
       </main>
 
-      <div className="w-full shrink-0 pb-6 pt-2 px-4 bg-gradient-to-t from-black via-black to-transparent">
+      <div className="w-full shrink-0 pb-6 pt-2 px-4 bg-gradient-to-t from-black via-black to-transparent z-40">
         <form onSubmit={handleSend} className="max-w-4xl mx-auto relative flex items-center">
           <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a follow-up question..." style={defaultGlass} className="w-full pl-6 pr-14 py-4 rounded-full text-base outline-none focus:border-indigo-400/50 transition-all duration-300 placeholder-white/20 text-white shadow-xl bg-black/40" autoFocus />
           <button type="submit" disabled={!input.trim() || isTyping} className="absolute right-2 p-3 rounded-full bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
@@ -175,6 +201,28 @@ export default function Search() {
           </button>
         </form>
       </div>
+
+      {/* PDF MODAL OVERLAY */}
+      {activeModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div style={modalGlass} className="w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-white/10 shrink-0 bg-black/40">
+              <h2 className="text-xl font-medium text-white">{activeModal.title}</h2>
+              <button onClick={closeModal} className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <CloseIcon />
+              </button>
+            </div>
+            
+            <div className="flex-1 w-full h-full bg-black/50">
+              <iframe 
+              src={`https://docs.google.com/gview?url=${activeModal.url}&embedded=true`} 
+              className="w-full h-full border-none bg-white" 
+              title="PDF Viewer" 
+            />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
