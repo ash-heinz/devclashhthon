@@ -16,7 +16,7 @@ export const mockTests = {
 
 export const mockQuestions = [
   // ==========================================
-  // CHEMISTRY (30 Questions)
+  // CHEMISTRY (25 Questions)
   // ==========================================
   {
     id: 1, subject: 'Chemistry', chapterId: 'c_u16', // Coordination Compounds
@@ -168,39 +168,9 @@ export const mockQuestions = [
     options: ["3", "5", "7", "9"],
     correct: 1
   },
-  {
-    id: 26, subject: 'Chemistry', chapterId: 'c_u3', // Periodic Table
-    text: "In period 4 of the periodic table, the elements with highest and lowest atomic radii are respectively:",
-    options: ["K and Kr", "K and Br", "Kr and K", "Br and K"],
-    correct: 0
-  },
-  {
-    id: 27, subject: 'Chemistry', chapterId: 'c_u10', // Organic
-    text: "Which of the following reaction is NOT correctly represented?",
-    options: ["Reaction A", "Reaction B", "Reaction C", "Reaction D"],
-    correct: 2
-  },
-  {
-    id: 28, subject: 'Chemistry', chapterId: 'c_u10', // Hydrocarbons
-    text: "What is the primary product when Toluene reacts with KMnO4 in an alkaline medium?",
-    options: ["Benzaldehyde", "Benzoic Acid", "Phenol", "Benzyl Alcohol"],
-    correct: 1
-  },
-  {
-    id: 29, subject: 'Chemistry', chapterId: 'c_u9', // Kinetics
-    text: "Which of the following statements is true for a zero-order reaction?",
-    options: ["Half-life is independent of initial concentration.", "Rate of reaction is independent of concentration.", "Half-life is inversely proportional to initial concentration.", "Rate constant depends on time."],
-    correct: 1
-  },
-  {
-    id: 30, subject: 'Chemistry', chapterId: 'c_u16', // Coordination Compounds
-    text: "The IUPAC name of the complex [Co(NH3)5Cl]Cl2 is:",
-    options: ["Pentaamminechloridocobalt(III) chloride", "Chloridopentaamminecobalt(II) chloride", "Pentaamminechlorocobalt(II) chloride", "Chloropentaamminecobalt(III) chloride"],
-    correct: 0
-  },
 
   // ==========================================
-  // MATHEMATICS (30 Questions)
+  // MATHEMATICS (25 Questions)
   // ==========================================
   {
     id: 31, subject: 'Mathematics', chapterId: 'm_u8', // Integral Calculus
@@ -352,39 +322,9 @@ export const mockQuestions = [
     options: ["0", "1", "2", "3"],
     correct: 0
   },
-  {
-    id: 56, subject: 'Mathematics', chapterId: 'm_u8', // Application of Derivatives
-    text: "Let f be a differentiable function satisfying f(x) = 1 - 2x + ∫(0 to x) e^(x-t) f(t) dt. If p and q are points of local minima and maxima of g(x), then |p + q| is :",
-    options: ["2", "4", "6", "8"],
-    correct: 1
-  },
-  {
-    id: 57, subject: 'Mathematics', chapterId: 'm_u8', // Differentiation
-    text: "Find the derivative of f(x) = x^x with respect to x.",
-    options: ["x^x (1 + log x)", "x^(x-1)", "x^x log x", "1 + log x"],
-    correct: 0
-  },
-  {
-    id: 58, subject: 'Mathematics', chapterId: 'm_u8', // Limits
-    text: "What is the value of lim(x→0) (sin x)/x ?",
-    options: ["0", "1", "Infinity", "Undefined"],
-    correct: 1
-  },
-  {
-    id: 59, subject: 'Mathematics', chapterId: 'm_u3', // Matrices
-    text: "If A and B are symmetric matrices of the same order, then AB - BA is a:",
-    options: ["Symmetric matrix", "Skew-symmetric matrix", "Diagonal matrix", "Zero matrix"],
-    correct: 1
-  },
-  {
-    id: 60, subject: 'Mathematics', chapterId: 'm_u5', // Permutations
-    text: "The number of ways to arrange the letters of the word 'MATHEMATICS' is:",
-    options: ["11! / (2! 2! 2!)", "11!", "11! / 2!", "11! / (2! 2!)"],
-    correct: 0
-  },
 
   // ==========================================
-  // PHYSICS (30 Questions)
+  // PHYSICS (25 Questions)
   // ==========================================
   {
     id: 61, subject: 'Physics', chapterId: 'p_u1', // Units and Dimensions
@@ -534,36 +474,6 @@ export const mockQuestions = [
     id: 85, subject: 'Physics', chapterId: 'p_u3', // Work, Energy, Power
     text: "A fly wheel having mass 3 kg and radius 5 m is free to rotate. A string is wound around the wheel and connected to a 3 kg mass. Kinetic energy of the wheel when the mass descends by 3 m is ________ J.",
     options: ["30", "45", "60", "90"],
-    correct: 1
-  },
-  {
-    id: 86, subject: 'Physics', chapterId: 'p_u10', // Waves
-    text: "Two tuning forks A and B give 8 beats in 2 s. When A is loaded with wax, beat frequency reduces to 4 beats in 2 s. If B is 380 Hz, original frequency of A is _________ Hz.",
-    options: ["376", "384", "382", "378"],
-    correct: 1
-  },
-  {
-    id: 87, subject: 'Physics', chapterId: 'p_u1', // Units & Measurements
-    text: "What is the dimensional formula for Gravitational Constant (G)?",
-    options: ["[M-1 L3 T-2]", "[M L2 T-2]", "[M-1 L2 T-2]", "[M L3 T-1]"],
-    correct: 0
-  },
-  {
-    id: 88, subject: 'Physics', chapterId: 'p_u3', // Kinematics (Projectile)
-    text: "A particle is projected at an angle of 45° with kinetic energy K. The kinetic energy at the highest point is:",
-    options: ["K", "K/2", "K/√2", "Zero"],
-    correct: 1
-  },
-  {
-    id: 89, subject: 'Physics', chapterId: 'p_u5', // Gravitation
-    text: "If the radius of the earth shrinks by 1%, its mass remaining the same, the acceleration due to gravity on the earth's surface would:",
-    options: ["decrease by 1%", "increase by 1%", "decrease by 2%", "increase by 2%"],
-    correct: 3
-  },
-  {
-    id: 90, subject: 'Physics', chapterId: 'p_u19', // Semiconductors
-    text: "In a p-type semiconductor, the majority charge carriers are:",
-    options: ["Electrons", "Holes", "Protons", "Neutrons"],
     correct: 1
   }
 ];

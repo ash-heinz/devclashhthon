@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
@@ -10,35 +11,35 @@ import Planner from './pages/Planner';
 import { Chapter } from './pages/Chapter.jsx';
 import { PreviousQuestions } from './pages/PreviousQuestions.jsx'; 
 import { ChapterQuestions } from './pages/ChapterQuestions.jsx';
-import DailyTest from './pages/DailyTest.jsx'; // <-- 1. Import Daily Test
-import Login from './pages/Login.jsx'; // <-- 1. Import Login
+import DailyTest from './pages/DailyTest.jsx';
+import Login from './pages/Login.jsx';
+import CustomTestBuilder from './pages/CustomTestBuilder.jsx'; // <--- NEW IMPORT
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth Route */}
-        <Route path="/login" element={<Login />} /> {/* <-- 2. Add Login Route */}
-
-        {/* Main Routes */}
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/search" element={<Search />} />
         
-        {/* PYQ Routes */}
         <Route path="/previous-questions" element={<PreviousQuestions />} />
         <Route path="/previous-questions/:subjectId/chapter/:chapterId" element={<ChapterQuestions />} /> 
         
-        {/* Study Routes */}
         <Route path="/subject/:subjectId" element={<Subject />} />
         <Route path="/subject/:subjectId/chapter/:chapterId" element={<Chapter />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/planner" element={<Planner />} />
         
-        {/* Mock Test Routes */}
         <Route path="/previous-papers" element={<PreviousPapers />} />
+        
+        {/* NEW CUSTOM TEST BUILDER ROUTE */}
+        <Route path="/custom-test-builder" element={<CustomTestBuilder />} /> 
+        
+        {/* EXISTING TEST ENGINE ROUTE */}
         <Route path="/test/:testId" element={<TestEngine />} />
-        {/* Daily Spaced Repetition Route */}
-        <Route path="/daily-test" element={<DailyTest />} /> {/* <-- 2. Add Route */}
+        
+        <Route path="/daily-test" element={<DailyTest />} />
       </Routes>
     </BrowserRouter>
   );

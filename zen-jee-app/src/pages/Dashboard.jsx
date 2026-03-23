@@ -304,11 +304,6 @@ export default function Dashboard() {
                       </svg>
                     </button>
                   </div>
-                  <button onClick={() => navigate('/profile')} className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded-full transition-colors border border-sky-500/20 group">
-                    <svg className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -466,7 +461,8 @@ export default function Dashboard() {
             <h3 className="text-sm text-stone-200 font-medium">Previous Papers</h3>
           </div>
           
-          <div style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
+          {/* UPDATED: Custom AI Paper now links to /custom-test-builder */}
+          <div onClick={() => navigate('/custom-test-builder')} style={defaultGlass} className={`rounded-[1.5rem] p-5 flex flex-col items-center justify-center cursor-pointer shadow-md ${glassHover}`}>
             <AiDoodle />
             <h3 className="text-sm text-stone-200 font-medium">Custom AI Paper</h3>
           </div>
