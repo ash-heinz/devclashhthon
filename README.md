@@ -1,9 +1,3 @@
-Here is a comprehensive and professional `README.md` tailored specifically for hackathon judges. It includes everything they need to set up the environment, run the full-stack application, and test the AI features without friction.
-
-You can save this as `README.md` in the root of your project folder.
-
-***
-
 ```markdown
 # 🚀 ZenJEE - Autonomous AI-Driven JEE Preparation Platform
 
